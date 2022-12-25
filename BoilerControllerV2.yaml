@@ -1,0 +1,826 @@
+esphome:
+  name: boiler-controller
+  platform: ESP32
+  board: esp32dev
+  libraries:
+    - "Wire"
+  includes:
+    - boiler/color_functions.h
+ 
+
+  on_boot:
+      then:
+         - ds1307.read_time:
+             
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: true
+  # Static IP
+  manual_ip:
+    static_ip: 192.168.1.82
+    gateway: 192.168.1.254
+    subnet: 255.255.255.0
+
+        
+
+api:
+  password: !secret api_password
+  services:
+    - service: update_nextion
+      then:
+        - lambda: 'id(disp1)->upload_tft();'
+    
+
+ota:
+  password: !secret ota_password
+
+logger:
+    baud_rate: 0
+    # Enable fallback hotspot (captive portal) in case wifi connection fails
+    level: DEBUG
+    logs: 
+        api: DEBUG
+        homeassistant: DEBUG
+        nextion: DEBUG
+        api.service: DEBUG
+        sensor: DEBUG
+        scheduler: DEBUG
+        dallas: DEBUG
+
+
+
+
+captive_portal:
+  
+
+uart:
+    id: uart_2
+    rx_pin: GPIO16 
+    tx_pin: GPIO17 
+    baud_rate: 115200
+
+time:
+  - platform: ds1307
+    id: rtc_time
+    # repeated synchronization is not necessary unless the external RTC
+    # is much more accurate than the internal clock
+    update_interval: never
+    on_time:
+      # Every 60 seconds
+      - seconds: /60
+        
+        then:
+          - lambda: |-
+                ESP_LOGD("main", "Debug output every 60 seconds"); 
+        
+    
+  - platform: homeassistant
+    # instead try to synchronize via network repeatedly ...
+    on_time_sync:
+      then:
+        # ... and update the RTC when the synchronization was successful
+        ds1307.write_time:
+        
+http_request:
+i2c:
+  sda: GPIO21
+  scl: GPIO22
+  scan: true
+dallas:
+  - pin: GPIO4
+    update_interval: 60s
+    
+
+ext_eeprom_component:
+  id: ext_eeprom_component_1
+  address: 0x57 
+  pollWriteComplete: true
+  writeTime: 5
+  pageSize: 32
+  memorySize: 4096
+
+rtc_scheduler:
+  - id: scheduler_1
+    storage: ext_eeprom_component_1
+    storage_offset: 1000
+    storage_size: 32768
+    max_events_per_switch: 56
+    main_switch: 
+      name: "Enable Heater Controller"
+      on_turn_on:
+        then:
+          - logger.log: "Heater Turned On by action!"
+    switches:
+      - scheduled_switch: "Pump"
+        scheduled_switch_id: relay3
+        scheduler_slot: 1
+      - scheduled_switch: "Water"
+        scheduled_switch_id: relay4 
+        scheduler_slot: 2      
+  - id: scheduler_2
+    storage: ext_eeprom_component_1
+    storage_offset: 2000
+    storage_size: 32768
+    max_events_per_switch: 56
+    main_switch: "Enable Pump Controller"
+    switches:
+      - scheduled_switch: "Pump"
+        scheduled_switch_id: relay3
+        scheduler_slot: 3
+      - scheduled_switch: "Water"
+        scheduled_switch_id: relay4 
+        scheduler_slot: 4        
+sensor:
+  - platform: dallas    
+    name: "Tank Top Temperature"
+    address: 0x8C01202253CD1E28
+    id: toptemp
+    on_value:
+      then:
+        - lambda: |-
+            id(current_background_color) = convert_float_to_color_temp(int(x));    
+  
+  - platform: homeassistant
+    id: sun_elevation
+    entity_id: sensor.today
+    internal: true
+    
+  - platform: homeassistant
+    id: today_max
+    entity_id: sensor.today_max
+    on_value:
+      then:
+        - lambda: |-
+            id(max_background_color) = convert_float_to_color_temp(int(x));
+    
+  - platform: homeassistant
+    id: today_min
+    entity_id: sensor.today_min
+    on_value:
+      then:
+        - lambda: |-
+            id(min_background_color) = convert_float_to_color_temp(int(x));
+    
+  - platform: homeassistant
+    id: today_rain
+    entity_id: sensor.today_rain
+    on_value:
+      then:
+        - lambda: |-
+            id(rain_background_color) = convert_float_to_color_rain(int(x));
+    
+  - platform: homeassistant
+    id: today_wind
+    entity_id: sensor.today_wind
+    
+  - platform: homeassistant
+    id: today_uv
+    entity_id: sensor.today_uv
+    on_value:
+      then:
+        - lambda: |-
+            id(uv_background_color) = convert_float_to_color_uv(int(x));   
+            
+  - platform: homeassistant
+    id: today_wind_icon
+    entity_id: sensor.today_wind_icon
+    
+  - platform: homeassistant
+    id: today_icon
+    entity_id: sensor.today_icon
+  
+    
+  - platform: homeassistant   # Office temperature
+    id: temperature_office
+    entity_id: sensor.office_temperature_temperature
+    internal: true
+    
+  - platform: wifi_signal
+    name: "WiFi Signal Boiler"
+    update_interval: 60s
+    id: wifi_boiler
+
+  - platform: uptime
+    name: Uptime Sensor
+    id: uptime_sensor
+    update_interval: 60s
+    on_raw_value:
+      then:
+        - text_sensor.template.publish:
+            id: uptime_human
+            state: !lambda |-
+              int seconds = round(id(uptime_sensor).raw_state);
+              int days = seconds / (24 * 3600);
+              seconds = seconds % (24 * 3600);
+              int hours = seconds / 3600;
+              seconds = seconds % 3600;
+              int minutes = seconds /  60;
+              seconds = seconds % 60;
+              return (
+                (days ? to_string(days) + "d " : "") +
+                (hours ? to_string(hours) + "h " : "") +
+                (minutes ? to_string(minutes) + "m " : "") +
+                (to_string(seconds) + "s")
+              ).c_str();
+
+text_sensor:
+  - platform: template
+    name: Boiler Uptime
+    id: uptime_human
+    icon: mdi:clock-start
+
+# Select setup
+select:
+  - platform: template
+    name: "Boiler Mode"
+    id: boil_mode
+    optimistic: true
+    options:
+      - 'Off'
+      - 'Manual On'
+      - 'Auto'
+      - 'Local'
+    initial_option: 'Off'
+    on_value:
+      then:
+        if:
+          condition:
+              - lambda: |- 
+                  return id(delay_disp) == false;
+           
+          then:
+            - lambda: |- 
+                  ESP_LOGD("main", "mode hdler  %d",id(delay_disp));
+            - script.execute: adjust_buttons_pagew
+            - script.execute: adjust_buttons_pageb
+            - script.execute: adjust_icons
+
+
+switch:
+  - platform: gpio
+    name: "relay3"
+    id: relay3
+    pin: GPIO13
+  - platform: gpio
+    name: "relay1"
+    pin: GPIO27
+  - platform: gpio
+    name: "relay2"
+    pin: GPIO26
+  - platform: gpio
+    name: "relay4"
+    id: relay4
+    pin: GPIO25
+      
+  - platform: template
+    id: boiler_run_state                #  false not runing - true running
+    name: "Boiler Running"
+    restore_state: true
+    optimistic: true   
+    turn_on_action:
+      then:
+        if:
+          condition:
+            not:
+              - lambda: |- 
+                  return (id(delay_disp));
+          then:
+              - if:
+                  condition: 
+                    - lambda: |-       # If off then keep off and ignore HA 
+                                  return (strcmp( id(boil_mode).state.c_str(), "Off") == 0) ;
+                  then:
+                    - lambda: |- 
+                                ESP_LOGD("main", "boiler hdler  %d",id(delay_disp));
+                                id(disp1).send_command_printf("weather.heaticonw.picc=0");
+                                id(disp1).send_command_printf("temperature.heaticon.picc=0");
+                    - switch.template.publish:
+                        id: boiler_run_state
+                        state: OFF
+                  else:
+                  - lambda: |- 
+                       ESP_LOGD("main", "boiler hdler  %d",id(delay_disp));    
+                       id(disp1).send_command_printf("weather.heaticonw.picc=1");
+                       id(disp1).send_command_printf("temperature.heaticon.picc=1");
+              - if:
+                  condition:   # If auto then turn on and respect HA 
+                    - lambda: |- 
+                        return (strcmp( id(boil_mode).state.c_str(), "Auto") == 0) ;
+                  then:
+                    - lambda: |- 
+                        ESP_LOGD("main", "boiler hdler  %d",id(delay_disp));
+                        id(disp1).send_command_printf("weather.heaticonw.picc=1");
+                        id(disp1).send_command_printf("temperature.heaticon.picc=1");
+    turn_off_action:
+      then:
+        if:
+          condition:
+            not:
+             -  lambda: |- 
+                  return (id(delay_disp));
+          then:
+            - if:
+                condition:
+                  - lambda: |-       # If manual on then keep on and ignore HA
+                      return (strcmp( id(boil_mode).state.c_str(), "Manual On") == 0);
+                then:
+                  - lambda: |- 
+                        ESP_LOGD("main", "boiler hdler  %d",id(delay_disp));
+                        id(disp1).send_command_printf("weather.heaticonw.picc=1");
+                        id(disp1).send_command_printf("temperature.heaticon.picc=1");
+                  - switch.template.publish:
+                      id: boiler_run_state
+                      state: ON
+                else:
+                  - lambda: |- 
+                        ESP_LOGD("main", "boiler hdler  %d",id(delay_disp));
+                        id(disp1).send_command_printf("weather.heaticonw.picc=0");
+                        id(disp1).send_command_printf("temperature.heaticon.picc=0");
+            - if:
+                condition:      # If auto then turn off and respect HA 
+                  - lambda: |- 
+                      return (strcmp( id(boil_mode).state.c_str(), "Auto") == 0) ;
+                then:
+                 - lambda: |-
+                        ESP_LOGD("main", "boiler hdler  %d",id(delay_disp));
+                        id(disp1).send_command_printf("weather.heaticonw.picc=0");
+                        id(disp1).send_command_printf("temperature.heaticon.picc=0");
+
+globals:
+ - id: first_page             # First page of the display?
+   type: bool
+   restore_value: no
+   initial_value: 'false'
+   
+ - id: current_brightness             # Is display on?
+   type: float
+   restore_value: no
+   initial_value: '-1.0'
+   
+ - id: wifi_state
+   type: bool
+   restore_value: no
+   initial_value: 'false'
+   
+ - id: current_mode          #  0=  SCHED_OFF, SCHED_ON, MAN_ON, OFF = 3
+   type: int
+   initial_value: '0'
+   restore_value: yes
+
+ - id:  auto_btn_img_idx
+   type: int
+   restore_value: no
+   initial_value: '0'
+
+ - id:  max_background_color
+   type: int
+   restore_value: no
+   initial_value: '0'
+   
+ - id:  min_background_color
+   type: int
+   restore_value: no
+   initial_value: '0'
+
+ - id:  current_background_color
+   type: int
+   restore_value: no
+   initial_value: '0'
+   
+ - id:  rain_background_color
+   type: int
+   restore_value: no
+   initial_value: '0'   
+
+ - id:  uv_background_color
+   type: int
+   restore_value: no
+   initial_value: '0'
+   
+ - id:  delay_disp
+   type: bool
+   restore_value: no
+   initial_value: 'true'
+   
+ - id: ha_schedule           
+   type: std::string
+   restore_value: yes
+   initial_value: " "
+   
+display:
+  - platform: nextion
+    id: disp1
+    uart_id: uart_2
+    update_interval: 10s
+    tft_url: 'http://rhome:8123/local/boiler5.tft'
+    
+    lambda: |-
+
+        if (id(wifi_state))
+          {
+            id(delay_disp) = false;
+          }
+        if (id(delay_disp))
+              {
+                  id(delay_disp) = false;
+                  ESP_LOGD("main", "display loop delayed as HA not available");
+              }
+        else
+              {
+                  
+                  if (id(first_page)) 
+                    {
+                          it.goto_page("weather");
+                          auto time = id(rtc_time).now();
+                          auto day_text =  time.strftime("%a");
+                          it.set_component_text("dayw",day_text.c_str());
+                          it.set_component_text_printf("hourw","%02d:",time.hour);
+                          it.set_component_text_printf("minutew","%02d",time.minute);
+                          it.set_component_background_color("maxTemp", Color(int(id(max_background_color))) );
+                          it.set_component_text_printf("maxTemp","%.0f",id(today_max).state);
+                          it.set_component_background_color("minTemp", Color(int(id(min_background_color))) );
+                          it.set_component_text_printf("minTemp","%.0f",id(today_min).state);
+                          it.set_component_background_color("actualTemp", Color(int(id(current_background_color))) );
+                          it.set_component_text_printf("actualTemp","%.0f",id(toptemp).state);
+                          it.set_component_font_color("rainText","0");
+                          it.set_component_background_color("rainText", Color(int(id(rain_background_color)) ) );
+                          it.set_component_text_printf("rainText","%.0f %%",id(today_rain).state);
+                          it.set_component_font_color("uvIndex","0");
+                          it.set_component_background_color("uvIndex", Color(int(id(uv_background_color)) ) );
+                          it.set_component_text_printf("uvIndex","%.0f",id(today_uv).state);
+                          it.send_command_printf  ("weatherPicture.pic=%.0f",id(today_icon).state);
+                          it.send_command_printf  ("windPicture.pic=%.0f",id(today_wind_icon).state);
+                          it.set_component_background_color("windSpeed","65535");
+                          it.set_component_text_printf("windSpeed","%.0f",id(today_wind).state); 
+                          id(adjust_buttons_pagew).execute();
+                          id(adjust_icons).execute();
+                      } 
+                  else 
+                     {
+                          it.goto_page("temperature");    
+                          it.set_component_text_printf("topt","%2.1f",id(toptemp).state);
+                          it.set_component_text_printf("bottemp","%2.1f",id(temperature_office).state);
+                          it.set_component_text_printf("ladtemp","%2.1f",id(temperature_office).state);
+                          it.set_component_text_printf("furtemp","%2.1f",id(temperature_office).state);
+                          it.set_component_text_printf("rettemp","%2.1f",id(temperature_office).state);
+                          it.set_component_text_printf("blendtemp","%2.1f",id(toptemp).state);
+                          auto time = id(rtc_time).now();
+                          auto day_text =  time.strftime("%a");
+                          it.set_component_text("day",day_text.c_str());
+                          it.set_component_text_printf("hour","%02d:",time.hour);
+                          it.set_component_text_printf("minute","%02d",time.minute);
+                          id(adjust_buttons_pageb).execute();
+                          id(adjust_icons).execute();
+                      }
+     
+                   id(first_page) = !id(first_page);  // Switch page
+            
+
+              }
+
+       
+binary_sensor:    
+
+  - platform: gpio
+    pin: GPIO34
+    name: "PIR Sensor"
+    device_class: motion
+
+  - platform: nextion
+    page_id: 0
+    component_id: 14
+    id: off_btn 
+    name: "Set Off"
+    internal: true
+    on_release:
+      lambda: |-
+         auto call = id(boil_mode).make_call();
+         call.set_option("Off");
+         call.perform();
+
+          
+
+  - platform: nextion
+    page_id: 0
+    component_id: 15
+    id: man_btn 
+    name: "Set Manual"
+    internal: true
+    on_release:
+      lambda: |-
+         // Test Code
+         ESP_LOGD("main", "manual btn pressed *****************************");
+         //id(scheduler_1).test();
+         auto call = id(boil_mode).make_call();
+         call.set_option("Manual On");
+         call.perform();
+
+           
+  - platform: nextion
+    page_id: 0
+    component_id: 16
+    id: auto_btn 
+    name: "Set Auto"
+    internal: true
+    on_release:
+     if:
+          condition:
+              lambda: 'return id(wifi_state);'
+          then:
+            lambda: |-
+             auto call = id(boil_mode).make_call();
+             call.set_option("Auto");
+             call.perform(); 
+          else:
+            lambda: |-
+             auto call = id(boil_mode).make_call();
+             call.set_option("Local");
+             call.perform();        
+         
+
+  - platform: nextion
+    page_id: 1
+    component_id: 9
+    id: off_btnw 
+    name: "Set Offw"
+    internal: true
+    on_release:
+      lambda: |-
+
+         auto call = id(boil_mode).make_call();
+         call.set_option("Off");
+         call.perform();
+
+          
+
+  - platform: nextion
+    page_id: 1
+    component_id: 8
+    id: man_btnw 
+    name: "Set Manualw"
+    internal: true
+    on_release:
+      lambda: |-
+
+         auto call = id(boil_mode).make_call();
+         call.set_option("Manual On");
+         call.perform();
+         
+
+           
+  - platform: nextion
+    page_id: 1
+    component_id: 10
+    id: auto_btnw 
+    name: "Set Autow"
+    internal: true
+    on_release:
+      if:
+          condition:
+              lambda: |- 
+                  return (id(wifi_state));
+          then:
+            lambda: |-
+             auto call = id(boil_mode).make_call();
+             call.set_option("Auto");
+             call.perform(); 
+          else:
+            lambda: |-
+             auto call = id(boil_mode).make_call();
+             call.set_option("Local");
+             call.perform();        
+         
+  - platform: status
+    id: apistatus
+    name: "Boiler API Status"
+    internal: true
+    
+    on_state:       # based on wifi connection, we set the global variable here. This way it will be stored and valid upon refresh
+      - if:
+          condition:
+            api.connected:
+          then: 
+            - globals.set:
+                  id: wifi_state
+                  value: 'true'  
+            - lambda: |-
+                  id(disp1).send_command_printf  ("temperature.wifiicon.picc=0");
+                  id(disp1).send_command_printf  ("weather.wifiiconw.picc=0");
+                  if (strcmp( id(boil_mode).state.c_str(), "Local") == 0){
+                      auto call = id(boil_mode).make_call();
+                      call.set_option("Auto");
+                      call.perform(); 
+                  }
+              
+          else:
+             - globals.set:
+                  id: wifi_state
+                  value: 'false' 
+             - lambda: |-
+                   id(disp1).send_command_printf  ("temperature.wifiicon.picc=1");
+                   id(disp1).send_command_printf  ("weather.wifiiconw.picc=1");
+                   if (strcmp( id(boil_mode).state.c_str(), "Auto") == 0){
+                      auto call = id(boil_mode).make_call();
+                      call.set_option("Local");
+                      call.perform(); 
+                    }
+script:                    
+
+  - id: adjust_buttons_pageb    # adjust button setting on boiler page
+    then:
+      - lambda: |-
+          id(auto_btn_img_idx) = 0;
+          if ( !id(wifi_state))
+                id(auto_btn_img_idx) = 3;
+           
+          
+      - if:
+          condition:
+             - lambda: |- 
+                  return (strcmp( id(boil_mode).state.c_str(), "Off") == 0);
+          then:
+                lambda: |-
+                  id(disp1).set_component_text_printf("temperature.statuslabel","System: Off");
+                  id(disp1).send_command_printf  ("temperature.off_btn.picc=1");
+                  id(disp1).send_command_printf  ("temperature.man_btn.picc=0");
+                  id(disp1).send_command_printf  ("temperature.auto_btn.picc=%i", id(auto_btn_img_idx));
+      - if:
+           condition:
+            - lambda: |- 
+                return (strcmp( id(boil_mode).state.c_str(), "Manual On") == 0);
+           then:
+            lambda: |-
+              id(disp1).set_component_text_printf("temperature.statuslabel","System: On Manual");
+              id(disp1).send_command_printf  ("temperature.off_btn.picc=0");
+              id(disp1).send_command_printf  ("temperature.man_btn.picc=1");
+              id(disp1).send_command_printf  ("temperature.auto_btn.picc=%i", id(auto_btn_img_idx));
+      - if:
+           condition:
+            - lambda: |- 
+                return (strcmp( id(boil_mode).state.c_str(), "Auto") == 0);
+           then:
+            lambda: |-
+              id(disp1).send_command_printf  ("temperature.off_btn.picc=0");
+              id(disp1).send_command_printf  ("temperature.man_btn.picc=0");
+              id(disp1).send_command_printf  ("temperature.auto_btn.picc=1");
+              if (id(boiler_run_state).state) {
+                  id(disp1).set_component_text_printf("temperature.statuslabel","System: On Auto");
+               }
+              else {
+                 id(disp1).set_component_text_printf("temperature.statuslabel","System: Off Auto");
+              }
+      - if:
+           condition:
+            - lambda: |- 
+                return (strcmp( id(boil_mode).state.c_str(), "Local") == 0);
+           then:
+            lambda: |-
+              id(disp1).send_command_printf  ("temperature.off_btn.picc=0");
+              id(disp1).send_command_printf  ("temperature.man_btn.picc=0");
+              id(disp1).send_command_printf  ("temperature.auto_btn.picc=2");
+              if (id(boiler_run_state).state) {
+                  id(disp1).set_component_text_printf("temperature.statuslabel","System: On Local");
+               }
+              else {
+                 id(disp1).set_component_text_printf("temperature.statuslabel","System: Off Local");
+              }
+              
+  - id: adjust_buttons_pagew      # adjust button setting on weather  page
+    then:
+      - lambda: |-
+          id(auto_btn_img_idx) = 0;
+          if ( !id(wifi_state))
+                id(auto_btn_img_idx) = 3;
+
+      - if: 
+          condition:
+             - lambda: |- 
+                  return (strcmp( id(boil_mode).state.c_str(), "Off") == 0);
+          then:
+                lambda: |-
+                  id(disp1).set_component_text_printf("weather.statuslabelw","System: Off");
+                  id(disp1).send_command_printf  ("weather.off_btnw.picc=1");
+                  id(disp1).send_command_printf  ("weather.man_btnw.picc=0");
+                  id(disp1).send_command_printf  ("weather.auto_btnw.picc=%i",  id(auto_btn_img_idx));
+            
+        
+      - if:
+           condition:
+            - lambda: |- 
+                return (strcmp( id(boil_mode).state.c_str(), "Manual On") == 0);
+           then:
+            lambda: |-
+              id(disp1).set_component_text_printf("weather.statuslabelw","System: On Manual");
+              id(disp1).send_command_printf  ("weather.off_btnw.picc=0");
+              id(disp1).send_command_printf  ("weather.man_btnw.picc=1");
+              id(disp1).send_command_printf  ("weather.auto_btnw.picc=%i", id(auto_btn_img_idx));
+      - if:
+           condition:
+            - lambda: |- 
+                return (strcmp( id(boil_mode).state.c_str(), "Auto") == 0);
+           then:
+            lambda: |-
+              id(disp1).send_command_printf  ("weather.off_btnw.picc=0");
+              id(disp1).send_command_printf  ("weather.man_btnw.picc=0");
+              id(disp1).send_command_printf  ("weather.auto_btnw.picc=1");
+               if (id(boiler_run_state).state) {
+                  id(disp1).set_component_text_printf("weather.statuslabelw","System: On Auto");
+               }
+              else {
+                 id(disp1).set_component_text_printf("weather.statuslabelw","System: Off Auto");
+              }
+    
+      - if:
+           condition:
+            - lambda: |- 
+                return (strcmp( id(boil_mode).state.c_str(), "Local") == 0);
+           then:
+            lambda: |-
+              id(disp1).send_command_printf  ("weather.off_btnw.picc=0");
+              id(disp1).send_command_printf  ("weather.man_btnw.picc=0");
+              id(disp1).send_command_printf  ("weather.auto_btnw.picc=2");
+               if (id(boiler_run_state).state) {
+                  id(disp1).set_component_text_printf("weather.statuslabelw","System: On Local");
+               }
+              else {
+                 id(disp1).set_component_text_printf("weather.statuslabelw","System: Off Local");
+              }
+              
+  - id: adjust_icons      # adjust icon on both pages
+    then:   
+        - if:
+            condition:
+             - lambda: |- 
+                  return (strcmp( id(boil_mode).state.c_str(), "Off") == 0);
+            then:
+              - lambda: |-
+                  id(disp1).send_command_printf("weather.shediconw.picc=3");
+                  id(disp1).send_command_printf("temperature.shedicon.picc=3");
+                  id(boiler_run_state).publish_state(false);
+                  
+        - if:
+            condition:
+             - lambda: |- 
+                  return (strcmp( id(boil_mode).state.c_str(), "Manual On") == 0);
+            then:
+              - lambda: |-
+                  id(disp1).send_command_printf("weather.shediconw.picc=2");
+                  id(disp1).send_command_printf("temperature.shedicon.picc=2");
+                  id(boiler_run_state).publish_state(true);
+        - if:
+            condition:
+             - lambda: |- 
+                  return (strcmp( id(boil_mode).state.c_str(), "Auto") == 0);
+            then:
+              - lambda: |-
+                    if(id(boiler_run_state).state){
+                        id(disp1).send_command_printf("weather.shediconw.picc=1");
+                        id(disp1).send_command_printf("temperature.shedicon.picc=1");
+                    }
+                    else {
+                      id(disp1).send_command_printf("weather.shediconw.picc=0");
+                      id(disp1).send_command_printf("temperature.shedicon.picc=0");                      
+                    }
+
+        - if:
+            condition:
+             - lambda: |- 
+                  return (strcmp( id(boil_mode).state.c_str(), "Local") == 0);
+            then:
+              - lambda: |-
+                    if(id(boiler_run_state).state){
+                        id(disp1).send_command_printf("weather.shediconw.picc=1");
+                        id(disp1).send_command_printf("temperature.shedicon.picc=1");
+                    }
+                    else {
+                      id(disp1).send_command_printf("weather.shediconw.picc=0");
+                      id(disp1).send_command_printf("temperature.shedicon.picc=0");                      
+                    }
+        - if:
+            condition:
+             - lambda: |- 
+                  return (id(wifi_state));
+            then:
+              - lambda: |-
+                    id(disp1).send_command_printf  ("temperature.wifiicon.picc=0");
+                    id(disp1).send_command_printf  ("weather.wifiiconw.picc=0");
+            else:
+              - lambda: |-
+                    id(disp1).send_command_printf  ("temperature.wifiicon.picc=1");
+                    id(disp1).send_command_printf  ("weather.wifiiconw.picc=1");
+        - if:
+            condition:
+             - lambda: |- 
+                  return (id(boiler_run_state).state);
+            then:
+              - lambda: |-
+                    id(disp1).send_command_printf  ("temperature.heaticon.picc=1");
+                    id(disp1).send_command_printf  ("weather.heaticonw.picc=1");
+            else:
+              - lambda: |-
+                    id(disp1).send_command_printf  ("temperature.heaticon.picc=0");
+                    id(disp1).send_command_printf  ("weather.heaticonw.picc=0");
+            
+ 
+    
