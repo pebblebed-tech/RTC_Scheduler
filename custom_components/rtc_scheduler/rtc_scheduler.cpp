@@ -1,11 +1,11 @@
 #include "automation.h"
 #include "rtc_scheduler.h"
-
 #include "esphome/core/log.h"
 #include "rtc_scheduler.h"
 #include "esphome/core/application.h"
 #include "esphome/core/helpers.h"
 #include <utility>
+#include <string>
 
 namespace esphome {
 namespace rtc_scheduler {
@@ -117,11 +117,7 @@ void RTCScheduler::shutdown_schedule_controller()
 RTCSchedulerControllerSwitch::RTCSchedulerControllerSwitch()
     : turn_on_trigger_(new Trigger<>()), turn_off_trigger_(new Trigger<>())
 {
-
-    text_sensor::TextSensor *controllerStatus_ = new text_sensor::TextSensor(this->name_+"Status");
-    App.register_text_sensor(controllerStatus_ );
-    controllerStatus_->set_internal(false);
-    controllerStatus_->set_disabled_by_default(false);
+   
    // controllerStatus_->set_component_source("template.text_sensor");
    // App.register_component(controllerStatus_);
 
@@ -130,7 +126,14 @@ RTCSchedulerControllerSwitch::RTCSchedulerControllerSwitch()
 
 void RTCSchedulerControllerSwitch::setup()
 {
-     if (!this->restore_state_)
+   std::string tSensor = this->get_name().c_str();
+    tSensor += " Status";
+    text_sensor::TextSensor *controllerStatus_ = new text_sensor::TextSensor( tSensor);
+    App.register_text_sensor(controllerStatus_ );
+    controllerStatus_->set_internal(false);
+    controllerStatus_->set_disabled_by_default(false);
+    controllerStatus_->publish_state("Testing");
+  if (!this->restore_state_)
     return;
 
   auto restored = this->get_initial_state();
