@@ -1,0 +1,134 @@
+esphome:
+  name: "schedule-test"
+  libraries:
+    - "Wire"
+  on_boot:
+    then:
+        - ds1307.read_time:
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+api:
+  password: !secret api_password
+  
+
+ota:
+  password: !secret ota_password
+
+logger:
+    baud_rate: 0
+    # Enable fallback hotspot (captive portal) in case wifi connection fails
+    level: DEBUG
+    logs: 
+        api: DEBUG
+        homeassistant: DEBUG
+        nextion: DEBUG
+        api.service: DEBUG
+        sensor: DEBUG
+        scheduler: DEBUG
+        dallas: DEBUG
+
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Esphome-Web-C34484"
+    password: "hlVBVePNuBE3"
+
+captive_portal:
+uart:
+  rx_pin: GPIO16 
+  tx_pin: GPIO17 
+  baud_rate: 115200
+
+time:
+  - platform: ds1307
+    id: rtc_time
+    # repeated synchronization is not necessary unless the external RTC
+    # is much more accurate than the internal clock
+    update_interval: never
+    on_time:
+      # Every 60 seconds
+      - seconds: /60
+        
+        then:
+          - lambda: |-
+                ESP_LOGD("main", "Debug output every 60 seconds"); 
+        
+    
+  - platform: homeassistant
+    # instead try to synchronize via network repeatedly ...
+    on_time_sync:
+      then:
+        # ... and update the RTC when the synchronization was successful
+        ds1307.write_time:
+        
+http_request:
+
+i2c:
+  sda: GPIO21
+  scl: GPIO22
+  scan: true    
+  
+ext_eeprom_component:
+  id: ext_eeprom_component_1
+  address: 0x57 
+  pollWriteComplete: true
+  writeTime: 5
+  pageSize: 32
+  memorySize: 4096
+  
+rtc_scheduler:
+  - id: scheduler_1
+    storage: ext_eeprom_component_1
+    storage_offset: 1000
+    storage_size: 32768
+    max_events_per_switch: 56
+    main_switch: 
+      name: "Enable Heater Controller"
+      on_turn_on:
+        then:
+          - logger.log: "Heater Turned On by action!"
+    switches:
+      - scheduled_switch: "Pump"
+        scheduled_switch_id: relay3
+        scheduler_slot: 1
+      - scheduled_switch: "Water"
+        scheduled_switch_id: relay4 
+        scheduler_slot: 2      
+  - id: scheduler_2
+    storage: ext_eeprom_component_1
+    storage_offset: 2000
+    storage_size: 32768
+    max_events_per_switch: 56
+    main_switch: "Enable Pump Controller"
+    switches:
+      - scheduled_switch: "Pump"
+        scheduled_switch_id: relay3
+        scheduler_slot: 3
+      - scheduled_switch: "Water"
+        scheduled_switch_id: relay4 
+        scheduler_slot: 4        
+
+
+switch:
+  - platform: gpio
+    name: "relay3"
+    id: relay3
+    pin: GPIO13
+  - platform: gpio
+    name: "relay1"
+    pin: GPIO27
+  - platform: gpio
+    name: "relay2"
+    pin: GPIO26
+  - platform: gpio
+    name: "relay4"
+    id: relay4
+    pin: GPIO25
+      

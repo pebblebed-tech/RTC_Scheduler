@@ -5,12 +5,13 @@ from esphome.const import CONF_ID
 from esphome.automation import maybe_simple_id
 from esphome.components import ext_eeprom_component
 from esphome.components import switch
+from esphome.components import text_sensor
 from esphome.const import (
     CONF_ID,
     CONF_NAME,
     
 )
-AUTO_LOAD = ["switch"]
+AUTO_LOAD = ["switch" , "text_sensor"]
 CODEOWNERS = ["@pebblebed-tech"]
 DEPENDENCIES = ['api']
 
