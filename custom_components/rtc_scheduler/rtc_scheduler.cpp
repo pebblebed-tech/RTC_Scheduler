@@ -127,13 +127,15 @@ RTCSchedulerControllerSwitch::RTCSchedulerControllerSwitch()
 
 void RTCSchedulerControllerSwitch::setup()
 {
-   std::string tSensor = this->get_name().c_str();
+   /* std::string tSensor = this->get_name().c_str();
     tSensor += " Status";
     text_sensor::TextSensor *controllerStatus_ = new text_sensor::TextSensor( tSensor);
     App.register_text_sensor(controllerStatus_ );
     controllerStatus_->set_internal(false);
-    controllerStatus_->set_disabled_by_default(false);
-    controllerStatus_->publish_state("Testing");
+    controllerStatus_->set_disabled_by_default(false); */
+
+    controllerStatus_->publish_state("Initialising");
+
   if (!this->restore_state_)
     return;
 
@@ -209,13 +211,17 @@ void RTCSchedulerControllerSwitch::write_state(bool state)
   if (state) {
     this->prev_trigger_ = this->turn_on_trigger_;
     this->turn_on_trigger_->trigger();
-    controllerStatus_->publish_state("Controller On");
+    if (this->controllerStatus_ != nullptr) {
+      this->controllerStatus_->publish_state("Controller On");
+    }
   } else {
     this->prev_trigger_ = this->turn_off_trigger_;
     this->turn_off_trigger_->trigger();
-   controllerStatus_->publish_state("Controller Off");
+    if (this->controllerStatus_ != nullptr) {
+      this->controllerStatus_->publish_state("Controller Off");
+    }
   }
-  ESP_LOGD(TAG, "Status is: %S",controllerStatus_->get_state().c_str());
+  ESP_LOGD(TAG, "Status is: %S",this->controllerStatus_->get_state().c_str());
   if (this->optimistic_)
     this->publish_state(state);
 }
