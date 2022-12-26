@@ -24,7 +24,8 @@ void RTCScheduler::setup() {
 
 }
 void RTCScheduler::loop() {
-      
+    
+
 // Check schedulke events against current time
 // If event time is in past then set switch states per schedule unless override is active
 // Update next schedule next event per switch
@@ -153,7 +154,7 @@ void RTCSchedulerControllerSwitch::dump_config()
     LOG_SWITCH("", "RTCSchedulerController Switch", this);
   ESP_LOGCONFIG(TAG, "  Restore State: %s", YESNO(this->restore_state_));
   ESP_LOGCONFIG(TAG, "  Optimistic: %s", YESNO(this->optimistic_));
-  //ESP_LOGCONFIG(TAG, "  Status sensor: %s",controllerStatus_->get_name().c_str());
+ // ESP_LOGCONFIG(TAG, "  Status sensor: %s",controllerStatus_->get_name().c_str());
 }
 
 void RTCSchedulerControllerSwitch::set_state_lambda(std::function<optional<bool>()> &&f) { this->f_ = f;}
@@ -195,7 +196,10 @@ bool RTCSchedulerControllerSwitch::assumed_state()
 {
     return this->assumed_state_;
 }
-
+void RTCSchedulerControllerSwitch::set_main_switch_status(RTCSchedulerTextSensor *controller_Status)
+{
+  controllerStatus_ = controller_Status;
+}
 void RTCSchedulerControllerSwitch::write_state(bool state)
 {
       if (this->prev_trigger_ != nullptr) {
@@ -205,13 +209,13 @@ void RTCSchedulerControllerSwitch::write_state(bool state)
   if (state) {
     this->prev_trigger_ = this->turn_on_trigger_;
     this->turn_on_trigger_->trigger();
-    if (controllerStatus_ != nullptr)   controllerStatus_->publish_state("Controller On");
+    controllerStatus_->publish_state("Controller On");
   } else {
     this->prev_trigger_ = this->turn_off_trigger_;
     this->turn_off_trigger_->trigger();
-    if (controllerStatus_ != nullptr)   controllerStatus_->publish_state("Controller Off");
+   controllerStatus_->publish_state("Controller Off");
   }
-
+  //ESP_LOGD(TAG, "Status is: %S",controllerStatus_->get_state());
   if (this->optimistic_)
     this->publish_state(state);
 }

@@ -50,7 +50,7 @@ struct struct_schedule_storage
 class RTCScheduler;                  // this component
 class RTCSchedulerControllerSwitch;  // switches that appear in the front end; based on switch core
 //class RTCSchedulerSwitch;            // switches representing any valve or pump; provides abstraction for latching valves
-
+class RTCSchedulerTextSensor;         // Text sensor to display status to HA frontend
 
 template<typename... Ts> class ShutdownAction;
 template<typename... Ts> class StartAction;
@@ -82,8 +82,13 @@ template<typename... Ts> class StartAction;
 
 }; */
 
-
- class RTCSchedulerControllerSwitch : public switch_::Switch, public Component {
+class RTCSchedulerTextSensor :  public text_sensor::TextSensor, public Component {
+ public:
+  void publish_val(const std::string &val);
+  void dump_config() override;
+};
+// *********************************************************************************************
+class RTCSchedulerControllerSwitch : public switch_::Switch, public Component {
  public:
   RTCSchedulerControllerSwitch();
 
@@ -99,7 +104,9 @@ template<typename... Ts> class StartAction;
   void loop() override;
 
   float get_setup_priority() const override;
-  text_sensor::TextSensor *controllerStatus_{nullptr};
+  
+
+  void set_main_switch_status(RTCSchedulerTextSensor *controller_Status);
  protected:
   bool assumed_state() override;
 
@@ -112,6 +119,7 @@ template<typename... Ts> class StartAction;
   Trigger<> *turn_off_trigger_;
   Trigger<> *prev_trigger_{nullptr};
   bool restore_state_{false};
+  RTCSchedulerTextSensor *controllerStatus_{nullptr};
 }; 
 
 class RTCScheduler : public Component, public api::CustomAPIDevice, public EntityBase {

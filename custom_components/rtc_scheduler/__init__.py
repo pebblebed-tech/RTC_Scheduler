@@ -19,6 +19,7 @@ CONF_EXT_EEPROM ='storage'
 CONF_EXT_EEPROM_OFFSET ='storage_offset'
 CONF_EXT_EEPROM_SIZE ='storage_size'
 CONF_MAIN_SWITCH = "main_switch"
+CONF_CONTROLLER_STATUS_ID = "schedule_controller_status_id"
 CONF_MAX_EVENTS_PER_SW = "max_events_per_switch"
 CONF_SCHEDULED_SWITCH = "scheduled_switch"
 CONF_SCHEDULED_SWITCH_ID = "scheduled_switch_id"
@@ -28,9 +29,8 @@ CONF_SWITCHES = "switches"
 
 rtc_scheduler_ns = cg.esphome_ns.namespace('rtc_scheduler')
 RTCScheduler = rtc_scheduler_ns.class_('RTCScheduler', cg.Component)
-SchedulerControllerSwitch = rtc_scheduler_ns.class_(
-    "RTCSchedulerControllerSwitch", switch.Switch, cg.Component
-)
+SchedulerControllerSwitch = rtc_scheduler_ns.class_("RTCSchedulerControllerSwitch", switch.Switch, cg.Component)
+SchedulerTextSensor=rtc_scheduler_ns.class_("RTCSchedulerTextSensor", text_sensor.TextSensor, cg.Component)
 ShutdownAction = rtc_scheduler_ns.class_("ShutdownAction", automation.Action)
 StartAction = rtc_scheduler_ns.class_("StartAction", automation.Action)
 
@@ -44,6 +44,7 @@ def validate_scheduler(config):
                 CONF_EXT_EEPROM_OFFSET,
                 CONF_EXT_EEPROM_SIZE,
                 CONF_MAX_EVENTS_PER_SW,
+                
             ]
 
         for config_item in requirements:
@@ -100,6 +101,10 @@ SCHEDULER_CONTROLLER_SCHEMA = cv.Schema(
             switch.switch_schema(SchedulerControllerSwitch),
             key=CONF_NAME,
         ),
+        cv.Required(CONF_CONTROLLER_STATUS_ID): cv.maybe_simple_value(
+            text_sensor.text_sensor_schema(SchedulerTextSensor),
+            key=CONF_NAME,
+        ),
         cv.Required(CONF_SWITCHES): cv.ensure_list(SCHEDULER_SWITCH_SCHEMA),
     }
 ).extend(cv.ENTITY_BASE_SCHEMA)
@@ -141,10 +146,17 @@ async def to_code(config):
             scheduler_controller[CONF_EXT_EEPROM_OFFSET]))
         cg.add(var.set_Events_Per_Switch(
             scheduler_controller[CONF_MAX_EVENTS_PER_SW]))
-        
+
+        status_var = await text_sensor.new_text_sensor(scheduler_controller[CONF_CONTROLLER_STATUS_ID])
+        await cg.register_component(status_var, scheduler_controller[CONF_CONTROLLER_STATUS_ID])
+
         sw_var = await switch.new_switch(scheduler_controller[CONF_MAIN_SWITCH])
         await cg.register_component(sw_var, scheduler_controller[CONF_MAIN_SWITCH])
+        cg.add(sw_var.set_main_switch_status(status_var))
         cg.add(var.set_controller_main_switch(sw_var))
+
+        
+        
 
 
 
