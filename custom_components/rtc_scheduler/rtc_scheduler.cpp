@@ -215,7 +215,7 @@ void RTCSchedulerControllerSwitch::write_state(bool state)
     this->turn_off_trigger_->trigger();
    controllerStatus_->publish_state("Controller Off");
   }
-  //ESP_LOGD(TAG, "Status is: %S",controllerStatus_->get_state());
+  ESP_LOGD(TAG, "Status is: %S",controllerStatus_->get_state().c_str());
   if (this->optimistic_)
     this->publish_state(state);
 }
@@ -225,5 +225,9 @@ void RTCSchedulerControllerSwitch::write_state(bool state)
 //TODO Add service to accept string schedule per slot from text boxes
 RTCSchedulerControllerSwitch *controller_sw_{nullptr};
 
+void RTCSchedulerTextSensor::dump_config()
+{
+  LOG_TEXT_SENSOR("  ", "TextSensor ", this);
+}
 } // namespace rtc_scheduler
 }  // namespace esphome
