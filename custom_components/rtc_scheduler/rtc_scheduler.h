@@ -108,7 +108,7 @@ class RTCSchedulerControllerSwitch : public switch_::Switch, public Component {
   float get_setup_priority() const override;
   
 
- // void set_main_switch_status(RTCSchedulerTextSensor *controller_Status);
+ 
  protected:
   bool assumed_state() override;
 
@@ -121,7 +121,7 @@ class RTCSchedulerControllerSwitch : public switch_::Switch, public Component {
   Trigger<> *turn_off_trigger_;
   Trigger<> *prev_trigger_{nullptr};
   bool restore_state_{false};
-//  RTCSchedulerTextSensor *controllerStatus_{nullptr};
+
 }; 
 
 class RTCScheduler : public Component, public api::CustomAPIDevice, public EntityBase {
