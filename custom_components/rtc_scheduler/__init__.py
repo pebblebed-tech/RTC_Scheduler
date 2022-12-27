@@ -6,6 +6,7 @@ from esphome.automation import maybe_simple_id
 from esphome.components import ext_eeprom_component
 from esphome.components import switch
 from esphome.components import text_sensor
+from esphome.components import sensor
 from esphome.const import (
     CONF_ID,
     CONF_NAME,
