@@ -108,7 +108,7 @@ class RTCSchedulerControllerSwitch : public switch_::Switch, public Component {
   float get_setup_priority() const override;
   
 
-  void set_main_switch_status(RTCSchedulerTextSensor *controller_Status);
+ // void set_main_switch_status(RTCSchedulerTextSensor *controller_Status);
  protected:
   bool assumed_state() override;
 
@@ -121,7 +121,7 @@ class RTCSchedulerControllerSwitch : public switch_::Switch, public Component {
   Trigger<> *turn_off_trigger_;
   Trigger<> *prev_trigger_{nullptr};
   bool restore_state_{false};
-  RTCSchedulerTextSensor *controllerStatus_{nullptr};
+//  RTCSchedulerTextSensor *controllerStatus_{nullptr};
 }; 
 
 class RTCScheduler : public Component, public api::CustomAPIDevice, public EntityBase {
@@ -147,6 +147,7 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
   void set_controller_main_switch(RTCSchedulerControllerSwitch *controller_switch);
   void resume_or_start_schedule_controller();
   void shutdown_schedule_controller();
+  void set_main_switch_status(RTCSchedulerTextSensor *controller_Status);
   protected:
         ext_eeprom_component::ExtEepromComponent *storage_;
         uint16_t storage_offset_;
@@ -156,7 +157,7 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
  /// Other Controller instances we should be aware of (used to check if slots are conflicting)
   std::vector<RTCScheduler *> other_controllers_;
   RTCSchedulerControllerSwitch *controller_sw_{nullptr};
-
+  RTCSchedulerTextSensor *controllerStatus_{nullptr};
   std::unique_ptr<ShutdownAction<>> scheduler_shutdown_action_;
   std::unique_ptr<StartAction<>> scheduler_start_action_;
   std::unique_ptr<Automation<>> scheduler_turn_off_automation_;

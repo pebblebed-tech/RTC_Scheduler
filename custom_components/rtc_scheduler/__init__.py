@@ -153,7 +153,8 @@ async def to_code(config):
 
         sw_var = await switch.new_switch(scheduler_controller[CONF_MAIN_SWITCH])
         await cg.register_component(sw_var, scheduler_controller[CONF_MAIN_SWITCH])
-        cg.add(sw_var.set_main_switch_status(status_var))
+#        cg.add(sw_var.set_main_switch_status(status_var))
+        cg.add(var.set_main_switch_status(status_var))
         cg.add(var.set_controller_main_switch(sw_var))
 
         
