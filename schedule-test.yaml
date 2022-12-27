@@ -89,18 +89,18 @@ rtc_scheduler:
     storage_offset: 1000
     storage_size: 32768
     max_events_per_switch: 56
-    schedule_controller_status_id: "heater_controller_status"
+    schedule_controller_status_id: "Heater Sheduler Status"
     main_switch: 
-      name: "Enable Heater Controller"
+      name: "Heater Scheduler"
       on_turn_on:
         then:
           - logger.log: "Heater Turned On by action!"
     
     switches:
-      - scheduled_switch: "Pump"
+      - scheduled_switch: "Element 1"
         scheduled_switch_id: relay3
         scheduler_slot: 1
-      - scheduled_switch: "Water"
+      - scheduled_switch: "Element 2"
         scheduled_switch_id: relay4 
         scheduler_slot: 2      
   - id: scheduler_2
@@ -108,13 +108,13 @@ rtc_scheduler:
     storage_offset: 2000
     storage_size: 32768
     max_events_per_switch: 56
-    main_switch: "Enable Pump Controller"
-    schedule_controller_status_id: "pump_controller_status"
+    main_switch: "Pump Scheduler"
+    schedule_controller_status_id: "Pump Scheduler Status"
     switches:
-      - scheduled_switch: "Pump"
+      - scheduled_switch: "Pump 1"
         scheduled_switch_id: relay3
         scheduler_slot: 3
-      - scheduled_switch: "Water"
+      - scheduled_switch: "Water Valve"
         scheduled_switch_id: relay4 
         scheduler_slot: 4        
 
