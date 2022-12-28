@@ -122,6 +122,18 @@ void RTCScheduler::set_main_switch_status(RTCSchedulerTextSensor *controller_Sta
     controllerStatus_->publish_state("Initialising");
   }
 }
+void RTCScheduler::set_mode_select(RTCSchedulerItemMode *controller_mode_select)
+{
+   this->controller_mode_select_ = controller_mode_select;
+  this->controller_mode_select_->add_on_state_callback([this](const std::string &value, size_t index) {
+    if (value == this->controller_mode_state_)
+      return;
+    this->on_controller_mode_change(value);
+  });
+}
+void RTCScheduler::on_controller_mode_change(const std::string &ctl_select_mode) {
+   ESP_LOGD(TAG, "Setting controller mode");
+}
 //**************************************************************************************************
 
 RTCSchedulerControllerSwitch::RTCSchedulerControllerSwitch()

@@ -6,13 +6,13 @@ from esphome.automation import maybe_simple_id
 from esphome.components import ext_eeprom_component
 from esphome.components import switch
 from esphome.components import text_sensor
-from esphome.components import sensor
+from esphome.components import select
 from esphome.const import (
     CONF_ID,
     CONF_NAME,
     
 )
-AUTO_LOAD = ["switch" , "text_sensor"]
+AUTO_LOAD = ["switch" , "text_sensor", "select"]
 CODEOWNERS = ["@pebblebed-tech"]
 DEPENDENCIES = ['api']
 
@@ -25,13 +25,24 @@ CONF_MAX_EVENTS_PER_SW = "max_events_per_switch"
 CONF_SCHEDULED_SWITCH = "scheduled_switch"
 CONF_SCHEDULED_SWITCH_ID = "scheduled_switch_id"
 CONF_SCHEDULER_SLOT = "scheduler_slot"
+CONF_SCHEDULED_SELECT = "scheduled_item_mode"
 
 CONF_SWITCHES = "switches"
+
+SCHEDULED_ITEM_MODE_OPTIONS = [
+    "manual_off",
+    "early_off",
+    "auto_off",
+    "manual_on",
+    "boost_on",
+    "auto_on"
+]
 
 rtc_scheduler_ns = cg.esphome_ns.namespace('rtc_scheduler')
 RTCScheduler = rtc_scheduler_ns.class_('RTCScheduler', cg.Component)
 SchedulerControllerSwitch = rtc_scheduler_ns.class_("RTCSchedulerControllerSwitch", switch.Switch, cg.Component)
 SchedulerTextSensor=rtc_scheduler_ns.class_("RTCSchedulerTextSensor", text_sensor.TextSensor, cg.Component)
+ScheduledItemSelect = rtc_scheduler_ns.class_("RTCSchedulerItemMode", select.Select, cg.Component)
 ShutdownAction = rtc_scheduler_ns.class_("ShutdownAction", automation.Action)
 StartAction = rtc_scheduler_ns.class_("StartAction", automation.Action)
 
@@ -71,6 +82,10 @@ def validate_scheduler(config):
     return config
 
 
+SELECT_SCHEMA = select.SELECT_SCHEMA.extend(
+    {cv.GenerateID(CONF_ID): cv.declare_id(ScheduledItemSelect)}
+)
+
 SCHEDULER_ACTION_SCHEMA = maybe_simple_id(
     {
         cv.Required(CONF_ID): cv.use_id(RTCScheduler),
@@ -86,6 +101,7 @@ SCHEDULER_SWITCH_SCHEMA = cv.Schema(
             key=CONF_NAME,
         ),
         cv.Required(CONF_SCHEDULER_SLOT): cv.uint8_t,
+
         cv.Required(CONF_SCHEDULED_SWITCH_ID): cv.use_id(switch.Switch),
     }
 )
@@ -97,11 +113,22 @@ SCHEDULER_CONTROLLER_SCHEMA = cv.Schema(
         cv.Required(CONF_EXT_EEPROM_OFFSET): cv.uint16_t,
         cv.Required(CONF_MAX_EVENTS_PER_SW): cv.uint16_t,
         cv.Required(CONF_EXT_EEPROM_SIZE): cv.uint32_t,
-        #cv.Required(CONF_SCHEDULE_SWITCH_CNT): cv.uint8_t,       
+        # cv.Required(CONF_SCHEDULED_SELECT): select.SELECT_SCHEMA.extend({
+        #     cv.GenerateID(): cv.declare_id(ScheduledItemSelect),
+        # }),
+        cv.Required(CONF_SCHEDULED_SELECT): cv.use_id(select.Select),
+        # cv.Required(CONF_SCHEDULED_SELECT): cv.maybe_simple_value(
+        #     select.select_schema(ScheduledItemSelect),
+        #     key=CONF_NAME,
+        # ),
+
+#        cv.Required(CONF_SCHEDULED_SELECT): SELECT_SCHEMA,
+      
         cv.Required(CONF_MAIN_SWITCH): cv.maybe_simple_value(
             switch.switch_schema(SchedulerControllerSwitch),
             key=CONF_NAME,
         ),
+        
         cv.Required(CONF_CONTROLLER_STATUS_ID): cv.maybe_simple_value(
             text_sensor.text_sensor_schema(SchedulerTextSensor),
             key=CONF_NAME,
@@ -147,6 +174,12 @@ async def to_code(config):
             scheduler_controller[CONF_EXT_EEPROM_OFFSET]))
         cg.add(var.set_Events_Per_Switch(
             scheduler_controller[CONF_MAX_EVENTS_PER_SW]))
+
+        selconf=config[CONF_SCHEDULED_SELECT]
+        mode_select=await select.new_select(selconf, options=SCHEDULED_ITEM_MODE_OPTIONS)
+        await cg.register_component(mode_select, selconf)
+        cg.add(var.set_mode_select(mode_select))
+
         status_var = await text_sensor.new_text_sensor(scheduler_controller[CONF_CONTROLLER_STATUS_ID])
         await cg.register_component(status_var, scheduler_controller[CONF_CONTROLLER_STATUS_ID])
 
