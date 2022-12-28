@@ -19,6 +19,7 @@ void RTCScheduler::setup() {
                    {"schedule_device_id", "event_count", "days", "hours","minutes","actions"});
     register_service(&RTCScheduler::on_schedule_erase_recieved, "erase_schedule",{"schedule_device_id"});
        register_service(&RTCScheduler::on_erase_all_schedules_recieved, "erase_all_schedules"); 
+    this->update_mode_state("manual_off");
        // Check schedule data in eeprom is valid
         // Setup next schedule next event per switch
 
@@ -104,6 +105,8 @@ void RTCScheduler::resume_or_start_schedule_controller()
     ESP_LOGD(TAG, "Startup called");
     if (this->controllerStatus_ != nullptr) {
       this->controllerStatus_->publish_state("Controller On");
+      this->ctl_on_sensor_->publish_state(true);
+
     }
   
 }
@@ -113,6 +116,8 @@ void RTCScheduler::shutdown_schedule_controller()
   ESP_LOGD(TAG, "Shutdown called");
     if (this->controllerStatus_ != nullptr) {
       this->controllerStatus_->publish_state("Controller Off");
+      this->ctl_on_sensor_->publish_state(false);
+
     }
 }
 void RTCScheduler::set_main_switch_status(RTCSchedulerTextSensor *controller_Status)
@@ -132,7 +137,28 @@ void RTCScheduler::set_mode_select(RTCSchedulerItemMode *controller_mode_select)
   });
 }
 void RTCScheduler::on_controller_mode_change(const std::string &ctl_select_mode) {
-   ESP_LOGD(TAG, "Setting controller mode");
+   ESP_LOGD(TAG, "Setting controller mode %s",ctl_select_mode.c_str());
+   this->controller_mode_state_ = ctl_select_mode;
+   if(ctl_select_mode == "manual_off"){
+      this->controller_sw_->publish_state(false);
+      ESP_LOGD(TAG, "Telling sw to off");
+   }
+    else
+     if(ctl_select_mode == "manual_on"){
+       this->controller_sw_->publish_state(true);
+       ESP_LOGD(TAG, "Telling sw to on");
+     }
+}
+
+void RTCScheduler::update_mode_state(const std::string &new_state)
+{
+this->controller_mode_state_ =new_state;
+
+  if (this->controller_mode_select_ != nullptr &&
+      this->controller_mode_select_->state != this->controller_mode_state_) {
+    this->controller_mode_select_->publish_state(
+        this->controller_mode_state_);  
+  }
 }
 //**************************************************************************************************
 

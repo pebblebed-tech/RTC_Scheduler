@@ -7,6 +7,7 @@
 #include "esphome/components/switch/switch.h"
 #include "esphome/components/text_sensor/text_sensor.h"
 #include "esphome/components/select/select.h"
+#include "esphome/components/binary_sensor/binary_sensor.h"
 #include "rtc_text_sensor.h"
 #include "rtc_mode_select.h"
 
@@ -152,8 +153,9 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
   void shutdown_schedule_controller();
   void set_main_switch_status(RTCSchedulerTextSensor *controller_Status);
   void set_mode_select(RTCSchedulerItemMode *controller_mode_select);
-  void on_controller_mode_change(const std::string &ctl_select_mode); // = 0;
-
+  void set_ind(binary_sensor::BinarySensor *s) { ctl_on_sensor_ = s; }
+  void on_controller_mode_change(const std::string &ctl_select_mode);
+  void update_mode_state(const std::string &new_state);
   protected:
         ext_eeprom_component::ExtEepromComponent *storage_;
         uint16_t storage_offset_;
@@ -165,7 +167,8 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
   std::string controller_mode_state_;
   RTCSchedulerControllerSwitch *controller_sw_{nullptr};
   RTCSchedulerTextSensor *controllerStatus_{nullptr};
-  RTCSchedulerItemMode *controller_mode_select_ = nullptr;             // Select to store manual position of vertical swing
+  RTCSchedulerItemMode *controller_mode_select_ = nullptr;  
+  binary_sensor::BinarySensor* ctl_on_sensor_ = nullptr;           
 
   std::unique_ptr<ShutdownAction<>> scheduler_shutdown_action_;
   std::unique_ptr<StartAction<>> scheduler_start_action_;

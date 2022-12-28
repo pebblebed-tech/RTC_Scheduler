@@ -89,9 +89,9 @@ rtc_scheduler:
     storage_offset: 1000
     storage_size: 32768
     max_events_per_switch: 56
-    schedule_controller_status_id: "HeaterShedulerStatus"
-    scheduled_item_mode: Heater Controller Mode"
-
+    schedule_controller_status_id: "Heater Sheduler Status"
+    scheduled_item_mode: "Heater Controller Mode"
+    scheduled_item_ind: "Heater Indicator"
     main_switch: 
       name: "Heater Scheduler"
       on_turn_on:
@@ -111,8 +111,9 @@ rtc_scheduler:
     storage_size: 32768
     max_events_per_switch: 56
     main_switch: "Pump Scheduler"
-    schedule_controller_status_id: "PumpSchedulerStatus"
+    schedule_controller_status_id: "Pump Scheduler Status"
     scheduled_item_mode: "Pump Controller Mode"
+    scheduled_item_ind: "Pump Indicator"
     switches:
       - scheduled_switch: "Pump 1"
         scheduled_switch_id: relay3
