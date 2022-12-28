@@ -133,7 +133,7 @@ SCHEDULER_CONTROLLER_SCHEMA = cv.Schema(
         cv.Required(CONF_EXT_EEPROM_OFFSET): cv.uint16_t,
         cv.Required(CONF_MAX_EVENTS_PER_SW): cv.uint16_t,
         cv.Required(CONF_EXT_EEPROM_SIZE): cv.uint32_t,
-        #cv.Required(CONF_SCHEDULED_IND): binary_sensor.binary_sensor_schema().extend(),
+        
         cv.Required(CONF_SCHEDULED_IND): cv.maybe_simple_value(
             binary_sensor.binary_sensor_schema().extend(),
             key=CONF_NAME,
@@ -158,11 +158,7 @@ CONFIG_SCHEMA = cv.All(
     cv.ensure_list(SCHEDULER_CONTROLLER_SCHEMA),
     validate_scheduler,
 )
-#CONFIG_SCHEMA = cv.Schema(
-#    {
-#        
-#    }
-#).extend(cv.COMPONENT_SCHEMA)
+
 
 
 @automation.register_action(
@@ -179,8 +175,6 @@ async def scheduler_simple_action_to_code(config, action_id, template_arg, args)
     return cg.new_Pvariable(action_id, template_arg, paren)
 
 async def to_code(config):
-    #var = cg.new_Pvariable(config[CONF_ID])
-    #await cg.register_component(var, config)
     
     for scheduler_controller in config:
         
