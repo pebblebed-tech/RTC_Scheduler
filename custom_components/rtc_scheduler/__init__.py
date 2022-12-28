@@ -147,13 +147,11 @@ async def to_code(config):
             scheduler_controller[CONF_EXT_EEPROM_OFFSET]))
         cg.add(var.set_Events_Per_Switch(
             scheduler_controller[CONF_MAX_EVENTS_PER_SW]))
-
         status_var = await text_sensor.new_text_sensor(scheduler_controller[CONF_CONTROLLER_STATUS_ID])
         await cg.register_component(status_var, scheduler_controller[CONF_CONTROLLER_STATUS_ID])
 
         sw_var = await switch.new_switch(scheduler_controller[CONF_MAIN_SWITCH])
         await cg.register_component(sw_var, scheduler_controller[CONF_MAIN_SWITCH])
-#        cg.add(sw_var.set_main_switch_status(status_var))
         cg.add(var.set_main_switch_status(status_var))
         cg.add(var.set_controller_main_switch(sw_var))
 

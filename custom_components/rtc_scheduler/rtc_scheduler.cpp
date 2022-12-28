@@ -219,9 +219,9 @@ void RTCSchedulerControllerSwitch::write_state(bool state)
 //TODO Add service to accept string schedule per slot from text boxes
 RTCSchedulerControllerSwitch *controller_sw_{nullptr};
 
-void RTCSchedulerTextSensor::dump_config()
+/* void RTCSchedulerTextSensor::dump_config()
 {
   LOG_TEXT_SENSOR("  ", "TextSensor ", this);
-}
+} */
 } // namespace rtc_scheduler
 }  // namespace esphome

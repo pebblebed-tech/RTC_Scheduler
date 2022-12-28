@@ -6,6 +6,7 @@
 #include "esphome/core/hal.h"
 #include "esphome/components/switch/switch.h"
 #include "esphome/components/text_sensor/text_sensor.h"
+#include "rtc_text_sensor.h"
 
 
 #include <vector>
@@ -84,11 +85,11 @@ template<typename... Ts> class StartAction;
 
 }; */
 
-class RTCSchedulerTextSensor :  public text_sensor::TextSensor, public Component {
+/* class RTCSchedulerTextSensor :  public text_sensor::TextSensor, public Component {
  public:
   
   void dump_config() override;
-};
+}; */
 // *********************************************************************************************
 class RTCSchedulerControllerSwitch : public switch_::Switch, public Component {
  public:
