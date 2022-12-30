@@ -1,6 +1,7 @@
 #pragma once
 
 #include "esphome/core/component.h"
+#include "esphome/core/preferences.h"
 #include "esphome/components/api/custom_api_device.h"
 #include "../ext_eeprom_component/ext_eeprom_component.h"
 #include "esphome/core/hal.h"
@@ -55,45 +56,12 @@ struct struct_schedule_storage
 
 class RTCScheduler;                  // this component
 class RTCSchedulerControllerSwitch;  // switches that appear in the front end; based on switch core
-//class RTCSchedulerSwitch;            // switches representing any valve or pump; provides abstraction for latching valves
 class RTCSchedulerTextSensor;         // Text sensor to display status to HA frontend
-
+class RTCSchedulerItemMode_Select;    // Select that sets the mode of the scheduled item
 template<typename... Ts> class ShutdownAction;
 template<typename... Ts> class StartAction;
 
-/* class RTCSchedulerSwitch {
- public:
-  RTCSchedulerSwitch();
-  RTCSchedulerSwitch(switch_::Switch *sprinkler_switch);
-
-
-  
-  void loop();               // called as a part of loop(), used for latching valve pulses
-  bool state();  // returns the switch's current state
-  void set_off_switch(switch_::Switch *off_switch) { this->off_switch_ = off_switch; }
-  void set_on_switch(switch_::Switch *on_switch) { this->on_switch_ = on_switch; }
-  
-  void sync_valve_state(
-      bool latch_state);  // syncs internal state to switch; if latching valve, sets state to latch_state
-  void turn_off();        // sets internal flag and actuates the switch
-  void turn_on();         // sets internal flag and actuates the switch
-  switch_::Switch *off_switch() { return this->off_switch_; }
-  switch_::Switch *on_switch() { return this->on_switch_; }
-
- protected:
-  bool state_{false};
-  
-//  switch_::Switch *off_switch_{nullptr};  // only used for latching valves
-//  switch_::Switch *on_switch_{nullptr};   // used for both latching and non-latching valves
-
-}; */
-
-/* class RTCSchedulerTextSensor :  public text_sensor::TextSensor, public Component {
- public:
-  
-  void dump_config() override;
-}; */
-// *********************************************************************************************
+//*****************************************************************************
 class RTCSchedulerControllerSwitch : public switch_::Switch, public Component {
  public:
   RTCSchedulerControllerSwitch();
@@ -152,10 +120,17 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
   void resume_or_start_schedule_controller();
   void shutdown_schedule_controller();
   void set_main_switch_status(RTCSchedulerTextSensor *controller_Status);
-  void set_mode_select(RTCSchedulerItemMode *controller_mode_select);
+  //void set_mode_select(RTCSchedulerItemMode_Select *controller_mode_select);
   void set_ind(binary_sensor::BinarySensor *s) { ctl_on_sensor_ = s; }
-  void on_controller_mode_change(const std::string &ctl_select_mode);
-  void update_mode_state(const std::string &new_state);
+  // void on_controller_mode_change(const std::string &ctl_select_mode);
+  //void update_mode_state(const std::string &new_state);
+  void add_scheduled_item(uint8_t item_slot_number,
+                      RTCSchedulerControllerSwitch *item_sw,
+                      switch_::Switch *item_sw_id,
+                      RTCSchedulerTextSensor *item_status,
+                      RTCSchedulerItemMode_Select *item_mode_select,
+                      binary_sensor::BinarySensor* item_on_indicator
+                      );
   protected:
         ext_eeprom_component::ExtEepromComponent *storage_;
         uint16_t storage_offset_;
@@ -164,11 +139,12 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
         const int event_size =9;  // the event is 9 bytes (3 bytes for time and 6 for  action string)
  /// Other Controller instances we should be aware of (used to check if slots are conflicting)
   std::vector<RTCScheduler *> other_controllers_;
+  std::vector<RTCSchedulerItemMode_Select *> scheduled_items_;
   std::string controller_mode_state_;
   RTCSchedulerControllerSwitch *controller_sw_{nullptr};
   RTCSchedulerTextSensor *controllerStatus_{nullptr};
-  RTCSchedulerItemMode *controller_mode_select_ = nullptr;  
-  binary_sensor::BinarySensor* ctl_on_sensor_ = nullptr;           
+  RTCSchedulerItemMode_Select *item_mode_select_ = nullptr;  
+  binary_sensor::BinarySensor* ctl_on_sensor_ = {nullptr};           
 
   std::unique_ptr<ShutdownAction<>> scheduler_shutdown_action_;
   std::unique_ptr<StartAction<>> scheduler_start_action_;

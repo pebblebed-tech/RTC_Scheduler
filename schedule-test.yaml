@@ -90,8 +90,8 @@ rtc_scheduler:
     storage_size: 32768
     max_events_per_switch: 56
     schedule_controller_status_id: "Heater Sheduler Status"
-    scheduled_item_mode: "Heater Controller Mode"
-    scheduled_item_ind: "Heater Indicator"
+    scheduler_mode: "Heater Controller Mode"
+    scheduler_ind: "Heater Indicator"
     main_switch: 
       name: "Heater Scheduler"
       on_turn_on:
@@ -102,9 +102,15 @@ rtc_scheduler:
       - scheduled_switch: "Element 1"
         scheduled_switch_id: relay3
         scheduler_slot: 1
+        scheduled_status: "Element 1 Status"
+        scheduled_mode: "Element 1 Mode"
+        scheduled_indicator: "Element 1 Indicator"
       - scheduled_switch: "Element 2"
         scheduled_switch_id: relay4 
-        scheduler_slot: 2      
+        scheduler_slot: 2  
+        scheduled_status: "Element 2 Status"
+        scheduled_mode: "Element 2 Mode"
+        scheduled_indicator: "Element 2 Indicator"    
   - id: scheduler_2
     storage: ext_eeprom_component_1
     storage_offset: 2000
@@ -112,16 +118,21 @@ rtc_scheduler:
     max_events_per_switch: 56
     main_switch: "Pump Scheduler"
     schedule_controller_status_id: "Pump Scheduler Status"
-    scheduled_item_mode: "Pump Controller Mode"
-    scheduled_item_ind: "Pump Indicator"
+    scheduler_mode: "Pump Controller Mode"
+    scheduler_ind: "Pump Indicator"
     switches:
       - scheduled_switch: "Pump 1"
         scheduled_switch_id: relay3
         scheduler_slot: 3
+        scheduled_status: "Pump 1 Status"
+        scheduled_mode: "Pump 1 Mode"
+        scheduled_indicator: "Pump 1 Indicator"
       - scheduled_switch: "Water Valve"
         scheduled_switch_id: relay4 
         scheduler_slot: 4        
-
+        scheduled_status: "Water Valve Status"
+        scheduled_mode: "Water Valve Mode"
+        scheduled_indicator: "Water Valve Indicator"
 
 switch:
   - platform: gpio
