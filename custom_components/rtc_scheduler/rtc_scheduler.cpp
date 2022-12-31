@@ -137,12 +137,12 @@ void RTCScheduler::set_main_switch_status(RTCSchedulerTextSensor *controller_Sta
     this->on_controller_mode_change(value);
   });
 } */
-void RTCScheduler::add_scheduled_item(uint8_t item_slot_number, RTCSchedulerControllerSwitch *item_sw, switch_::Switch *item_sw_id,RTCSchedulerTextSensor *item_status, RTCSchedulerItemMode_Select *item_mode_select, binary_sensor::BinarySensor *item_on_indicator)
+void RTCScheduler::add_scheduled_item(uint8_t item_slot_number, RTCSchedulerControllerSwitch *item_sw, switch_::Switch *item_sw_id,RTCSchedulerTextSensor *item_status,RTCSchedulerTextSensor *item_next_event, RTCSchedulerItemMode_Select *item_mode_select, binary_sensor::BinarySensor *item_on_indicator)
 {
    this->item_mode_select_ = item_mode_select;
    this->scheduled_items_.push_back(this->item_mode_select_); // Add to the list of scheduled items
    // Configure the new scheduled item
-   this->item_mode_select_->configure_item(item_slot_number, item_sw,item_sw_id,item_status,  item_on_indicator);
+   this->item_mode_select_->configure_item(item_slot_number, item_sw,item_sw_id,item_status, item_next_event,  item_on_indicator);
 }
 /* void RTCScheduler::on_controller_mode_change(const std::string &ctl_select_mode)
 {

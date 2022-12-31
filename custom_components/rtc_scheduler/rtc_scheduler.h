@@ -128,6 +128,7 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
                       RTCSchedulerControllerSwitch *item_sw,
                       switch_::Switch *item_sw_id,
                       RTCSchedulerTextSensor *item_status,
+                      RTCSchedulerTextSensor *item_next_event,
                       RTCSchedulerItemMode_Select *item_mode_select,
                       binary_sensor::BinarySensor* item_on_indicator
                       );

@@ -28,6 +28,7 @@ CONF_MAX_EVENTS_PER_SW = "max_events_per_switch"
 CONF_SCHEDULER_SELECT = "scheduler_mode"
 CONF_SCHEDULER_IND = "scheduler_ind"
 
+
 CONF_SWITCHES = "switches"
 CONF_SCHEDULED_SWITCH = "scheduled_switch"
 CONF_SCHEDULED_SWITCH_ID = "scheduled_switch_id"
@@ -35,6 +36,7 @@ CONF_SCHEDULER_SLOT = "scheduler_slot"
 CONF_SCHEDULED_MODE = "scheduled_mode"
 CONF_SCHEDULED_IND = "scheduled_indicator"
 CONF_SCHEDULED_STATUS = "scheduled_status"
+CONF_SCHEDULED_NEXT_EVENT = "scheduled_next_event_text"
 
 SCHEDULED_ITEM_MODE_OPTIONS = [
     "Manual Off",
@@ -90,9 +92,10 @@ def validate_scheduler(config):
                     raise cv.Invalid(
                         f"{config_item} is a required option for {scheduler_controller_index}"
                     )
+
         if not scheduler_controller[CONF_SWITCHES]:
             raise cv.Invalid(
-                        f"A controller must have at least one schedule switch item, Controller {scheduler_controller_index}"
+                        f"A controller must have at least one schedule  item, Controller {scheduler_controller_index}"
             )
         slots = []    
         for item in scheduler_controller[CONF_SWITCHES]:
@@ -105,7 +108,10 @@ def validate_scheduler(config):
                     raise cv.Invalid(
                         f"Slot number {item[CONF_SCHEDULER_SLOT]} cannot be used more than once they must be unique"  
                     )
-                      
+            if ((not CONF_SCHEDULED_SWITCH_ID in item) and (not CONF_SCHEDULED_SWITCH in item)):
+                raise cv.Invalid(
+                    f"Slot number {item[CONF_SCHEDULER_SLOT]} must have either a scheduled_switch_id or scheduled_switch"
+                )
     return config
 
 
@@ -124,6 +130,11 @@ SCHEDULER_SWITCH_SCHEMA = cv.Schema(
 
         cv.Required(CONF_SCHEDULER_SLOT): cv.uint8_t,
         cv.Optional(CONF_SCHEDULED_SWITCH_ID): cv.use_id(switch.Switch),
+        
+        cv.Optional(CONF_SCHEDULED_NEXT_EVENT): cv.maybe_simple_value(
+            text_sensor.text_sensor_schema(SchedulerTextSensor),
+            key=CONF_NAME,
+        ),
         cv.Optional(CONF_SCHEDULED_STATUS): cv.maybe_simple_value(
             text_sensor.text_sensor_schema(SchedulerTextSensor),
             key=CONF_NAME,
@@ -223,7 +234,10 @@ async def to_code(config):
             if CONF_SCHEDULED_STATUS in sch_switch:
                 status_var = await text_sensor.new_text_sensor(sch_switch[CONF_SCHEDULED_STATUS])
                 await cg.register_component(status_var, sch_switch[CONF_SCHEDULED_STATUS])
-            
+            if CONF_SCHEDULED_NEXT_EVENT in sch_switch:
+                next_var = await text_sensor.new_text_sensor(sch_switch[CONF_SCHEDULED_NEXT_EVENT])
+                await cg.register_component(next_var, sch_switch[CONF_SCHEDULED_NEXT_EVENT])
+
             if CONF_SCHEDULED_SWITCH in sch_switch:
                 sw_var = await switch.new_switch(sch_switch[CONF_SCHEDULED_SWITCH])
                 await cg.register_component(sw_var, sch_switch[CONF_SCHEDULED_SWITCH])
@@ -239,7 +253,7 @@ async def to_code(config):
             mode_select=await select.new_select(selconf, options=SCHEDULED_ITEM_MODE_OPTIONS)
             await cg.register_component(mode_select, selconf)
 
-            cg.add(var.add_scheduled_item(sch_switch[CONF_SCHEDULER_SLOT], sw_var, switch_id_var,  status_var, mode_select, sens ))
+            cg.add(var.add_scheduled_item(sch_switch[CONF_SCHEDULER_SLOT], sw_var, switch_id_var,  status_var, next_var, mode_select, sens ))
 # Now add the other schedulers
     for scheduler_controller in config:
         var = await cg.get_variable(scheduler_controller[CONF_ID])
