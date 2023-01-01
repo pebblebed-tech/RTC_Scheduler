@@ -155,4 +155,29 @@ switch:
     name: "relay4"
     id: relay4
     pin: GPIO25
-      
+  - platform: template
+    name: "Test Valid Switch"
+    id: "test_valid_switch"
+    turn_on_action:
+        - lambda: |-
+              id(test_valid_switch).publish_state(true);
+              id(scheduler_1).Test_Set_Slot_Valid(1,true);
+              ESP_LOGD("main", "Slot 1 valid");
+    turn_off_action:
+      - lambda: |-
+              id(test_valid_switch).publish_state(false);
+              id(scheduler_1).Test_Set_Slot_Valid(1,false);
+              ESP_LOGD("main", "Slot 1 not valid");
+  - platform: template
+    name: "Test State Switch"
+    id: "test_state_switch"
+    turn_on_action:
+        - lambda: |-
+              id(test_state_switch).publish_state(true);
+              id(scheduler_1).Test_Set_Slot_Sw(1,true);
+              ESP_LOGD("main", "Slot 1 On");
+    turn_off_action:
+      - lambda: |-
+              id(test_state_switch).publish_state(false);
+              id(scheduler_1).Test_Set_Slot_Sw(1,false);
+              ESP_LOGD("main", "Slot 1 Off");      

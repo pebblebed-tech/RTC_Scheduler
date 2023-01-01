@@ -44,17 +44,20 @@ class RTCSchedulerItemMode_Select : public select::Select, public Component {
                       );
   void set_item_schedule_valid(bool schedule_valid);
   void set_controller_state(bool schedule_controller_state);
-  void get_controller_state(bool schedule_controller_state);
+  bool get_controller_state();
   void set_scheduled_item_state(bool scheduled_item_state);
-  void get_scheduled_item_state(bool scheduled_item_state);
-  void set_next_scheduled_event( std::string next_schedule_event);
+  bool get_scheduled_item_state();
+  void set_next_scheduled_event(uint16_t next_schedule_event, bool next_schedule_state);
+  uint8_t get_slot_number();
  protected:
   void adjustItemInternalState();
   void prepareItemSensorAndSwitches();
-  void adjustItemSensorAndSwitches();
+  void adjustItemSensorAndSwitches(bool newState,std::string &newValue);
   void adjustIndicatorState(bool newValue);
   void adjustSwitchState(bool newValue);
-  void adjustStatusTextSensor(std::string newValue);
+  void adjustStatusTextSensor(std::string &newValue);
+  void adjustEventTextSensor(std::string &newValue);
+  std::string convertEventTimeToStr(uint16_t event_time) const;
   void control(const std::string &value) override; 
   std::string item_mode_state_str_ = "Not Configured Off";
   // The scheduled item slot number used to get schedule from flash
@@ -79,7 +82,7 @@ class RTCSchedulerItemMode_Select : public select::Select, public Component {
   // Text string that holds the next schedule event 
   std::string next_schedule_event_str_ = "";
   // Event time in minutes (0-6 Days, 0-23 Hours, 0-59 minutes = Max 8142)
-  size_t next_schedule_event_ = 8143; // Note any value above 8142 is invalid eg no event
+  uint16_t next_schedule_event_ = 8143; // Note any value above 8142 is invalid eg no event
   // Event next state EG off or on
   bool next_schedule_state_ = false;
 

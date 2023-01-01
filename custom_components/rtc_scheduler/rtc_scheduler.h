@@ -55,7 +55,7 @@ struct struct_schedule_storage
 };
 
 class RTCScheduler;                  // this component
-class RTCSchedulerControllerSwitch;  // switches that appear in the front end; based on switch core
+class RTCSchedulerControllerSwitch;  // Main switch for the controller
 class RTCSchedulerTextSensor;         // Text sensor to display status to HA frontend
 class RTCSchedulerItemMode_Select;    // Select that sets the mode of the scheduled item
 template<typename... Ts> class ShutdownAction;
@@ -120,10 +120,7 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
   void resume_or_start_schedule_controller();
   void shutdown_schedule_controller();
   void set_main_switch_status(RTCSchedulerTextSensor *controller_Status);
-  //void set_mode_select(RTCSchedulerItemMode_Select *controller_mode_select);
   void set_ind(binary_sensor::BinarySensor *s) { ctl_on_sensor_ = s; }
-  // void on_controller_mode_change(const std::string &ctl_select_mode);
-  //void update_mode_state(const std::string &new_state);
   void add_scheduled_item(uint8_t item_slot_number,
                       RTCSchedulerControllerSwitch *item_sw,
                       switch_::Switch *item_sw_id,
@@ -132,14 +129,19 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
                       RTCSchedulerItemMode_Select *item_mode_select,
                       binary_sensor::BinarySensor* item_on_indicator
                       );
+  // Temp testcode
+  void Test_Set_Slot_Valid(uint8_t item_slot_number, bool valid);
+  void Test_Set_Slot_Sw(uint8_t item_slot_number, bool sw_state);
   protected:
         ext_eeprom_component::ExtEepromComponent *storage_;
         uint16_t storage_offset_;
         uint8_t switch_count_;
         uint16_t max_switch_events_;
         const int event_size =9;  // the event is 9 bytes (3 bytes for time and 6 for  action string)
+ RTCSchedulerItemMode_Select* get_scheduled_item_from_slot(uint8_t slot);
  /// Other Controller instances we should be aware of (used to check if slots are conflicting)
   std::vector<RTCScheduler *> other_controllers_;
+  // List of scheduled items
   std::vector<RTCSchedulerItemMode_Select *> scheduled_items_;
   std::string controller_mode_state_;
   RTCSchedulerControllerSwitch *controller_sw_{nullptr};

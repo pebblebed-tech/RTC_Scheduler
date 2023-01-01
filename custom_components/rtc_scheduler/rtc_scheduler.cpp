@@ -14,12 +14,13 @@ static const char *TAG = "rtc_scheduler";
 
 RTCScheduler::RTCScheduler() {}
 RTCScheduler::RTCScheduler(const std::string &name) : EntityBase(name) {}
+
 void RTCScheduler::setup() {
     register_service(&RTCScheduler::on_schedule_recieved, "send_schedule",
                    {"schedule_device_id", "event_count", "days", "hours","minutes","actions"});
     register_service(&RTCScheduler::on_schedule_erase_recieved, "erase_schedule",{"schedule_device_id"});
        register_service(&RTCScheduler::on_erase_all_schedules_recieved, "erase_all_schedules"); 
-    //this->update_mode_state("manual_off");
+// TODO Need to validate each slot and keep a list of slot validity
        // Check schedule data in eeprom is valid
         // Setup next schedule next event per switch
 
@@ -128,51 +129,41 @@ void RTCScheduler::set_main_switch_status(RTCSchedulerTextSensor *controller_Sta
     controllerStatus_->publish_state("Initialising");
   }
 }
-/* void RTCScheduler::set_mode_select(RTCSchedulerItemMode_Select *controller_mode_select)
-{
-   this->controller_mode_select_ = controller_mode_select;
-  this->controller_mode_select_->add_on_state_callback([this](const std::string &value, size_t index) {
-    if (value == this->controller_mode_state_)
-      return;
-    this->on_controller_mode_change(value);
-  });
-} */
+
 void RTCScheduler::add_scheduled_item(uint8_t item_slot_number, RTCSchedulerControllerSwitch *item_sw, switch_::Switch *item_sw_id,RTCSchedulerTextSensor *item_status,RTCSchedulerTextSensor *item_next_event, RTCSchedulerItemMode_Select *item_mode_select, binary_sensor::BinarySensor *item_on_indicator)
 {
    this->item_mode_select_ = item_mode_select;
+   //TODO need to update the validity of the slot before calling the configure
    this->scheduled_items_.push_back(this->item_mode_select_); // Add to the list of scheduled items
    // Configure the new scheduled item
    this->item_mode_select_->configure_item(item_slot_number, item_sw,item_sw_id,item_status, item_next_event,  item_on_indicator);
 }
-/* void RTCScheduler::on_controller_mode_change(const std::string &ctl_select_mode)
+void RTCScheduler::Test_Set_Slot_Valid(uint8_t item_slot_number, bool valid)
 {
-  ESP_LOGD(TAG, "Setting controller mode %s", ctl_select_mode.c_str());
-  this->controller_mode_state_ = ctl_select_mode;
-  if (ctl_select_mode == "manual_off")
-  {
-    this->controller_sw_->turn_off();
-    // this->controller_sw_->publish_state(false);
-    ESP_LOGD(TAG, "Telling sw to off");
+  RTCSchedulerItemMode_Select* sched_item = get_scheduled_item_from_slot(item_slot_number);
+  if(sched_item != nullptr){
+    sched_item->set_item_schedule_valid(valid);
+    ESP_LOGD(TAG, "setting slot %d", item_slot_number);
   }
-  else if (ctl_select_mode == "manual_on")
-  {
-    this->controller_sw_->turn_on();
-    this->controller_sw_->publish_state(true);
-    ESP_LOGD(TAG, "Telling sw to on");
-  }
-} */
-
-/* void RTCScheduler::update_mode_state(const std::string &new_state)
+}
+void RTCScheduler::Test_Set_Slot_Sw(uint8_t item_slot_number, bool sw_state)
 {
-this->controller_mode_state_ =new_state;
+  RTCSchedulerItemMode_Select* sched_item = get_scheduled_item_from_slot(item_slot_number);
+  if(sched_item != nullptr)
+    sched_item->set_scheduled_item_state(sw_state);
+}
+RTCSchedulerItemMode_Select* RTCScheduler::get_scheduled_item_from_slot(uint8_t slot)
+{
+  for (int i = 0; i < this->scheduled_items_.size(); i++) {
+    if (this->scheduled_items_[i]->get_slot_number() == slot){
+      ESP_LOGD(TAG, "Found slot");
+      return  &(*this->scheduled_items_[i]);
 
-  if (this->controller_mode_select_ != nullptr &&
-      this->controller_mode_select_->state != this->controller_mode_state_) {
-    this->controller_mode_select_->publish_state(
-        this->controller_mode_state_);  
+    }
   }
-} */
-//**************************************************************************************************
+  return nullptr;
+}
+//******************************************************************************************
 
 RTCSchedulerControllerSwitch::RTCSchedulerControllerSwitch()
     : turn_on_trigger_(new Trigger<>()), turn_off_trigger_(new Trigger<>())
