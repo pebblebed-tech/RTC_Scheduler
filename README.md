@@ -53,7 +53,7 @@ rtc_scheduler:
         scheduled_mode: "Element 2 Mode"
         scheduled_indicator: "Element 2 Indicator"
 ```
-## H2 Configuration variables:
+## Configuration variables:
 **id** *(Required)* Manually specify the ID used for code generation.
 
 **storage** *(**Required**, string)* : This is the ID of the storage component.
@@ -62,4 +62,9 @@ rtc_scheduler:
 
 **storage_size** *(**Required**, int)* : This is size of the E2 device in bits.
 
-**main_switch** *(**Required**, string)*:  The name for the scheduler controller's main switch as it will appear in the front end. This switch, when turned on, Allows the scheduler to opperate either from a scchedule or from manual controls from Home Assistant.
+**main_switch** *(**Required**, string)*:  The name for the scheduler controller's main switch as it will appear in the front end. This switch, when turned on, Allows the scheduler to opperate either from a schedule or from manual controls (select) from Home Assistant.
+
+**switches** *(**Required**, list)* : A list of scheduled items the scheduler can control. Each item consists of:
+
+- **scheduled_switch** *(Optiopnal, string)*: Name of a virtual switch that can be controlled by the scheduler. This can use the standard ESPHome switch on_turn_on & on_turn_off functions.
+- **scheduled_id** *(Optional, ID)*: This is the :ref:`switch <config-switch>` component. Typically this would be a :doc:`GPIO switch <switch/gpio>` wired to control a relay or other switching device. It is not recommended to expose this switch to the front end
