@@ -76,6 +76,7 @@ void RTCScheduler:: send_log_message_to_HA(String level, String logMessage, Stri
       {"my_value", "500"},
     });
 }
+
 void RTCScheduler::on_schedule_recieved(int schedule_device_id, int event_count, std::vector<int> days ,std::vector<int> hours ,std::vector<int> minutes, std::vector<std::string> action) {
     ESP_LOGD(TAG, "Schedule Slot %d  Event Count %d recieved", schedule_device_id, event_count);
     ESP_LOGD(TAG, "Entries Count - Day:%d, Hours: %d Mins:%d, Actions: %d",days.size(),hours.size(), minutes.size(), action.size() );
