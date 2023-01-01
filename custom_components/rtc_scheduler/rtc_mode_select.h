@@ -81,8 +81,8 @@ class RTCSchedulerItemMode_Select : public select::Select, public Component {
   bool schedule_valid_ = false;
   // Text string that holds the next schedule event 
   std::string next_schedule_event_str_ = "";
-  // Event time in minutes (0-6 Days, 0-23 Hours, 0-59 minutes = Max 8142)
-  uint16_t next_schedule_event_ = 8143; // Note any value above 8142 is invalid eg no event
+  // Event time in minutes (0-6 Days, 0-23 Hours, 0-59 minutes = Max 10079)
+  uint16_t next_schedule_event_ = 10080; // Note any value above 10079 is invalid eg no event
   // Event next state EG off or on
   bool next_schedule_state_ = false;
 

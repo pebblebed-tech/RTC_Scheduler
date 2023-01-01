@@ -16,10 +16,24 @@ RTCScheduler::RTCScheduler() {}
 RTCScheduler::RTCScheduler(const std::string &name) : EntityBase(name) {}
 
 void RTCScheduler::setup() {
-    register_service(&RTCScheduler::on_schedule_recieved, "send_schedule",
+ std::string service_sched_name;
+ std::string service_name;
+ service_sched_name =  this->name_;
+ // remove the spaces
+ std::replace(service_sched_name.begin(), service_sched_name.end(), ' ', '_');
+ service_name = "_send_schedule";
+ service_name = service_sched_name+service_name;
+
+  register_service(&RTCScheduler::on_schedule_recieved, service_name,
                    {"schedule_device_id", "event_count", "days", "hours","minutes","actions"});
-    register_service(&RTCScheduler::on_schedule_erase_recieved, "erase_schedule",{"schedule_device_id"});
-       register_service(&RTCScheduler::on_erase_all_schedules_recieved, "erase_all_schedules"); 
+
+  service_name = "_erase_schedule";
+  service_name = service_sched_name+service_name;
+                  
+  register_service(&RTCScheduler::on_schedule_erase_recieved, service_name,{"schedule_device_id"});
+  service_name = "_erase_all_schedules";
+  service_name = service_sched_name+service_name;
+  register_service(&RTCScheduler::on_erase_all_schedules_recieved, service_name); 
 // TODO Need to validate each slot and keep a list of slot validity
        // Check schedule data in eeprom is valid
         // Setup next schedule next event per switch
