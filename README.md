@@ -92,22 +92,22 @@ Each schedule controller defines the starting address of its event storage using
 
 ### Schedule Controller Usage
 | Bytes   | Description                | Notes                         |
-| ----------:| -------------------------- | ----------------------------- |
-| 0::3       | Controller Storage Setup | Used to initialise E2 for schedule storage. Once configured these are set to known value |
-| 4::--      | Slots with events | See the slot definition below |
+| ---------- | -------------------------- | ----------------------------- |
+| 0:3       | Controller Storage Setup | Used to initialise E2 for schedule storage. Once configured these are set to known value |
+| 4:--      | Slots with events | See the slot definition below |
 
 The each scheduled item has it own slot with header information as per below. 
 ### Slot Usage
 | Bytes   | Description                | Notes                         |
-| ----------:| -------------------------- | ----------------------------- |
-| 0::1       | Slot Valid | Used to initialise the schedule storage. Once configured these are set to known value. If the slot is erased it is setback to non valid value |
-| 2::3      | Slots CRC Checksum | This is calculated on writing the slot data and is checked  before a new schedule is written to the slot (Protects Flash Life) |
-| 4::--      | Event Storage | See definition of a event below |
+| ---------- | -------------------------- | ----------------------------- |
+| 0:1       | Slot Valid | Used to initialise the schedule storage. Once configured these are set to known value. If the slot is erased it is setback to non valid value |
+| 2:3      | Slots CRC Checksum | This is calculated on writing the slot data and is checked  before a new schedule is written to the slot (Protects Flash Life) |
+| 4:--      | Event Storage | See definition of a event below |
 
 ### Event Format
 Each event is consists 16bit word (2 bytes)
 | Bits   | Description                | Notes                         |
-| ----------:| -------------------------- | ----------------------------- |
-| 0::13       | Event Time | In seconds, the maximum value is  10080 *EG 7 Days x 24 Hours x 60 Mins*|
+| ---------- | -------------------------- | ----------------------------- |
+| 0:13       | Event Time | In seconds, the maximum value is  10080 *EG 7 Days x 24 Hours x 60 Mins*|
 | 14     |  Event state | 1 for on, 0 for off   |
 | 15     | Valid Event | This has to be set to true for the event to be valid. It should be noted that on a new schedule being recieved un-used events are set to invalid EG upto value supplied in *max_events_per_switch*  |
