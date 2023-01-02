@@ -22,18 +22,26 @@ void RTCScheduler::setup() {
  // remove the spaces
  std::replace(service_sched_name.begin(), service_sched_name.end(), ' ', '_');
  service_name = "_send_schedule";
- service_name = service_sched_name+service_name;
 
-  register_service(&RTCScheduler::on_schedule_recieved, service_name,
-                   {"schedule_device_id", "event_count", "days", "hours","minutes","actions"});
+ 
+ const std::string on_sched_name  = service_sched_name+service_name;
+  //on_sched_name = service_sched_name+service_name;
+  register_service(&RTCScheduler::on_schedule_recieved,  on_sched_name,
+                   {"schedule_slot_id",  "days", "hours","minutes","actions"});
 
   service_name = "_erase_schedule";
   service_name = service_sched_name+service_name;
                   
-  register_service(&RTCScheduler::on_schedule_erase_recieved, service_name,{"schedule_device_id"});
+  register_service(&RTCScheduler::on_schedule_erase_recieved, service_name,{"schedule_slot_id"});
   service_name = "_erase_all_schedules";
   service_name = service_sched_name+service_name;
   register_service(&RTCScheduler::on_erase_all_schedules_recieved, service_name); 
+
+  service_name = "__send_text_schedule";
+  service_name = service_sched_name+service_name;
+                  
+  register_service(&RTCScheduler::on_text_schedule_recieved, service_name,{"schedule_slot_id", "events"});
+
 // TODO Need to validate each slot and keep a list of slot validity
        // Check schedule data in eeprom is valid
         // Setup next schedule next event per switch
@@ -76,19 +84,19 @@ void RTCScheduler:: send_log_message_to_HA(String level, String logMessage, Stri
       {"my_value", "500"},
     });
 }
-
-void RTCScheduler::on_schedule_recieved(int schedule_device_id, int event_count, std::vector<int> days ,std::vector<int> hours ,std::vector<int> minutes, std::vector<std::string> action) {
-    ESP_LOGD(TAG, "Schedule Slot %d  Event Count %d recieved", schedule_device_id, event_count);
+void RTCScheduler::on_text_schedule_recieved(int schedule_slot_id, std::string events) {
+    ESP_LOGD(TAG, "Text Schedule Slot %d   recieved", schedule_slot_id);
+}
+void RTCScheduler::on_schedule_recieved(int schedule_slot_id, std::vector<int> days ,std::vector<int> hours ,std::vector<int> minutes, std::vector<std::string> action) {
+    ESP_LOGD(TAG, "Schedule Slot %d   recieved", schedule_slot_id);
     ESP_LOGD(TAG, "Entries Count - Day:%d, Hours: %d Mins:%d, Actions: %d",days.size(),hours.size(), minutes.size(), action.size() );
      send_log_message_to_HA("error","The test message from Controller","ESPHome: boiler_controller");
     // Verify and write data to eeprom
-    for (int i = 0; i < event_count; i++) {
-    
-    }
+   
     // Setup next schedule next event per switch
 }
-void  RTCScheduler::on_schedule_erase_recieved(int schedule_device_id){
-    ESP_LOGD(TAG, "Schedule Slot %d  erase recieved", schedule_device_id);
+void  RTCScheduler::on_schedule_erase_recieved(int schedule_slot_id){
+    ESP_LOGD(TAG, "Schedule Slot %d  erase recieved", schedule_slot_id);
     // Mark slot as inactive and clear data
 }
 void  RTCScheduler::on_erase_all_schedules_recieved(){

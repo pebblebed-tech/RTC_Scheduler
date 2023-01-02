@@ -95,7 +95,11 @@ The services are as follows:-
 ### send_schedule
 Send a schedule for a slot.
 #### parameters
-
+schedule_slot_id - int - The slot to be deleted
+std::vector<int> days
+std::vector<int> hours
+std::vector<int> minutes
+std::vector<std::string> action 
 
 ### erase_schedule
 Erase a single slot schedule
