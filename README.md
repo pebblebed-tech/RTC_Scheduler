@@ -87,6 +87,23 @@ rtc_scheduler:
 
 - **scheduled_indicator** *(Optiopnal, string)*: Name of a binary sensor that reflects the current state of the scheduled item in Home Assistant.
 
+## Services presented to Home Assistant
+The scheduler presents a set of services to Home Assistant
+Each service is prefixed by *"esphome."* and the *device_name* and *scheduler_name* from the config in the yaml. As an example ```ESPHome: schedule_test_pump_scheduler_send_schedule"```
+
+The services are as follows:-
+### send_schedule
+Send a schedule for a slot.
+#### parameters
+
+
+### erase_schedule
+Erase a single slot schedule
+#### parameters
+schedule_slot_id - The slot to be deleted
+### erase_all_schedules 
+No parameters - Erase all slots that belong that scheduler
+
 ## Storage Allocation
 Each schedule controller defines the starting address of its event storage using the ```storage_offset``` configuration entry E.G. Offset plus location. 
 
