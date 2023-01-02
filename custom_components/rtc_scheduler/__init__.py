@@ -213,9 +213,9 @@ async def to_code(config):
         await cg.register_component(var, scheduler_controller)
         store = await cg.get_variable(scheduler_controller[CONF_EXT_EEPROM])
         cg.add(var.set_storage(store))
-        cg.add(var.set_Storage_Offset(
+        cg.add(var.set_storage_offset(
             scheduler_controller[CONF_EXT_EEPROM_OFFSET]))
-        cg.add(var.set_Events_Per_Switch(
+        cg.add(var.set_events_per_switch(
             scheduler_controller[CONF_MAX_EVENTS_PER_SW]))
 
         sens = await binary_sensor.new_binary_sensor(scheduler_controller[CONF_SCHEDULER_IND])

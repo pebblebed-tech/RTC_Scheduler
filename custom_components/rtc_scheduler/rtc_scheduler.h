@@ -109,10 +109,10 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
   void send_log_message_to_HA(String level, String logMessage, String sender);
   void on_schedule_erase_recieved(int schedule_device_id);
   void on_erase_all_schedules_recieved();
-  void set_Storage_Offset(uint16_t storage_offset) { this->storage_offset_ = storage_offset; }
+  void set_storage_offset(uint16_t storage_offset) { this->storage_offset_ = storage_offset; }
   void set_storage(ext_eeprom_component::ExtEepromComponent *storage) { this->storage_ = storage; }
-  void set_Switch_Count(uint8_t switch_count) { this->switch_count_ = switch_count; }
-  void set_Events_Per_Switch(uint16_t max_switch_events) { this->max_switch_events_ = max_switch_events; }
+  void set_scheduled_items_count_(uint8_t items_count) { this->scheduled_items_count_ = items_count; }
+  void set_events_per_switch(uint16_t max_switch_events) { this->max_switch_events_ = max_switch_events; }
   float get_setup_priority() const override;
   /// add another controller to the controller so it can check slots
   void add_controller(RTCScheduler *other_controller);
@@ -135,7 +135,7 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
   protected:
         ext_eeprom_component::ExtEepromComponent *storage_;
         uint16_t storage_offset_;
-        uint8_t switch_count_;
+        uint8_t scheduled_items_count_;      // Number active scheduled items
         uint16_t max_switch_events_;
         const int event_size =9;  // the event is 9 bytes (3 bytes for time and 6 for  action string)
  RTCSchedulerItemMode_Select* get_scheduled_item_from_slot(uint8_t slot);
