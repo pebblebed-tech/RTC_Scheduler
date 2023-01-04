@@ -95,16 +95,22 @@ The services are as follows:-
 ### send_schedule
 Send a schedule for a slot.
 #### parameters
-schedule_slot_id - int - The slot to be deleted
-std::vector<int> days
-std::vector<int> hours
-std::vector<int> minutes
-std::vector<std::string> action 
+- ```schedule_slot_id int``` - The slot to be updated.
+- ```std::vector<int> days``` - Array ints representing days (0-6)
+- ```std::vector<int> hours``` - Array ints representing hours (0-23)
+- ```std::vector<int> minutes``` - Array ints representing hours (0-59)
+- ```std::vector<std::string> action``` - Currently "ON" or "OfFF" to be expanded to manage state. 
+### send_schedule_text
+Send a schedule for a slot.
+#### parameters
 
+- ```std::string ``` - Takes the form of Slot ID, Event, Event, ..... 
+- Event encodes as this DHHMMS where state is either ON or OFF
+- Example "1,61140ON,61400OFF
 ### erase_schedule
 Erase a single slot schedule
 #### parameters
-schedule_slot_id - The slot to be deleted
+- ```schedule_slot_id int``` - The slot to be deleted
 ### erase_all_schedules 
 No parameters - Erase all slots that belong that scheduler
 
