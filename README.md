@@ -23,36 +23,37 @@ ext_eeprom_component:
   pageSize: 32
   memorySize: 4096
 rtc_scheduler:
-  - id: scheduler_1
-    storage: ext_eeprom_component_1
-    storage_offset: 1000
-    storage_size: 32768
-    max_events_per_switch: 56
-    main_switch: 
-      name: "Heater Scheduler"
-      on_turn_on:
-        then:
-          - logger.log: "Heater Turned On by action!"
-    
-    switches:
-      - scheduled_mode: "Element 1 Mode"
-        scheduled_switch: 
-          name: "Element 1"
-          on_turn_on:
-            then:
-            - logger.log: "element 1 Turned On by action!"
-        scheduled_switch_id: relay3
-        scheduler_slot: 1
-        scheduled_status: "Element 1 Status"
-        scheduled_next_event_text: "Element 1 Next Event"
-        
-        scheduled_indicator: "Element 1 Indicator"
-      - scheduled_switch: "Element 2"
-        scheduled_switch_id: relay4 
-        scheduler_slot: 2  
-        scheduled_status: "Element 2 Status"
-        scheduled_mode: "Element 2 Mode"
-        scheduled_indicator: "Element 2 Indicator"
+  - id: scheduler_hub
+    - id: scheduler_1
+      storage: ext_eeprom_component_1
+      storage_offset: 1000
+      storage_size: 32768
+      max_events_per_switch: 56
+      main_switch: 
+        name: "Heater Scheduler"
+        on_turn_on:
+          then:
+            - logger.log: "Heater Turned On by action!"
+      
+      switches:
+        - scheduled_mode: "Element 1 Mode"
+          scheduled_switch: 
+            name: "Element 1"
+            on_turn_on:
+              then:
+              - logger.log: "element 1 Turned On by action!"
+          scheduled_switch_id: relay3
+          scheduler_slot: 1
+          scheduled_status: "Element 1 Status"
+          scheduled_next_event_text: "Element 1 Next Event"
+          
+          scheduled_indicator: "Element 1 Indicator"
+        - scheduled_switch: "Element 2"
+          scheduled_switch_id: relay4 
+          scheduler_slot: 2  
+          scheduled_status: "Element 2 Status"
+          scheduled_mode: "Element 2 Mode"
+          scheduled_indicator: "Element 2 Indicator"
 ```
 ## Configuration variables:
 **id** *(Required)* Manually specify the ID used for code generation.

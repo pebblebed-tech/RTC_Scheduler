@@ -11,6 +11,8 @@
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "rtc_text_sensor.h"
 #include "rtc_mode_select.h"
+#include "rtc_scheduler_hub.h"
+
 
 
 #include <vector>
@@ -58,6 +60,7 @@ class RTCScheduler;                  // this component
 class RTCSchedulerControllerSwitch;  // Main switch for the controller
 class RTCSchedulerTextSensor;         // Text sensor to display status to HA frontend
 class RTCSchedulerItemMode_Select;    // Select that sets the mode of the scheduled item
+class RTCSchedulerHub;                // The master component
 template<typename... Ts> class ShutdownAction;
 template<typename... Ts> class StartAction;
 
@@ -105,8 +108,8 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
   void dump_config() override;
   void test();
   
-  void on_schedule_recieved(int schedule_slot_id,  std::vector<int> days ,std::vector<int> hours ,std::vector<int> minutes, std::vector<std::string> actions);
-  void on_text_schedule_recieved(int schedule_slot_id, std::string events); 
+  void on_schedule_recieved(int schedule_slot_id,  std::vector<int> days ,std::vector<int> hours ,std::vector<int> minutes, std::vector<std::string> &actions);
+  void on_text_schedule_recieved(int schedule_slot_id, std::string &events); 
   void send_log_message_to_HA(String level, String logMessage, String sender);
   void on_schedule_erase_recieved(int schedule_slot_id);
   void on_erase_all_schedules_recieved();
@@ -130,9 +133,14 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
                       RTCSchedulerItemMode_Select *item_mode_select,
                       binary_sensor::BinarySensor* item_on_indicator
                       );
+
+  void set_parent(RTCSchedulerHub *parent) { this->parent_ = parent; };
+
   // Temp testcode
   void Test_Set_Slot_Valid(uint8_t item_slot_number, bool valid);
   void Test_Set_Slot_Sw(uint8_t item_slot_number, bool sw_state);
+  
+
   protected:
         ext_eeprom_component::ExtEepromComponent *storage_;
         uint16_t storage_offset_;
@@ -143,13 +151,13 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
  /// Other Controller instances we should be aware of (used to check if slots are conflicting)
   std::vector<RTCScheduler *> other_controllers_;
   // List of scheduled items
-  std::vector<RTCSchedulerItemMode_Select *> scheduled_items_;
+  std::vector<RTCSchedulerItemMode_Select*> scheduled_items_;
   std::string controller_mode_state_;
   RTCSchedulerControllerSwitch *controller_sw_{nullptr};
   RTCSchedulerTextSensor *controllerStatus_{nullptr};
   RTCSchedulerItemMode_Select *item_mode_select_ = nullptr;  
   binary_sensor::BinarySensor* ctl_on_sensor_ = {nullptr};           
-
+  RTCSchedulerHub *parent_={nullptr};
   std::unique_ptr<ShutdownAction<>> scheduler_shutdown_action_;
   std::unique_ptr<StartAction<>> scheduler_start_action_;
   std::unique_ptr<Automation<>> scheduler_turn_off_automation_;

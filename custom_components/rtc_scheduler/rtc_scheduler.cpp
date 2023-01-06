@@ -1,7 +1,6 @@
 #include "automation.h"
 #include "rtc_scheduler.h"
 #include "esphome/core/log.h"
-#include "rtc_scheduler.h"
 #include "esphome/core/application.h"
 #include "esphome/core/helpers.h"
 #include <utility>
@@ -16,19 +15,28 @@ RTCScheduler::RTCScheduler() {}
 RTCScheduler::RTCScheduler(const std::string &name) : EntityBase(name) {}
 
 void RTCScheduler::setup() {
- std::string service_sched_name;
- std::string service_name;
- service_sched_name =  this->name_;
- // remove the spaces
- std::replace(service_sched_name.begin(), service_sched_name.end(), ' ', '_');
- service_name = "_send_schedule";
-
  
- const std::string on_sched_name  = service_sched_name+service_name;
-  //on_sched_name = service_sched_name+service_name;
-  register_service(&RTCScheduler::on_schedule_recieved,  on_sched_name,
-                   {"schedule_slot_id",  "days", "hours","minutes","actions"});
+ //std::replace(service_sched_name.begin(), service_sched_name.end(), ' ', '_');
+ //const std::string foo = std::string("b")+this->name_.c_str();
+ 
+ //const std::string foo = "pump_scheduler";
+ //service_name = "_send_schedula";
+ //const std::string on_sched_name  ="bHeater Scheduler" + std::string("_send_schedule");
 
+ //const std::string foo;
+ 
+/*     const std::string foo = "heater_scheduler_send_schedulb";
+  
+   const std::string foobar = "pump_scheduler_send_schedulb";
+ 
+const std::string foobart = "Heater_Scheduler"; 
+  //on_sched_name = service_sched_name+service_name;
+  if (service_sched_name == foobart )
+    register_service(&RTCScheduler::on_schedule_recieved, foo,
+                   {"schedule_slot_id",  "days", "hours","minutes","actions"});
+     else
+    register_service(&RTCScheduler::on_schedule_recievedb, foobar,
+                   {"schedule_slot_id",  "days", "hours","minutes","actions"}); 
   service_name = "_erase_schedule";
   service_name = service_sched_name+service_name;
                   
@@ -37,10 +45,10 @@ void RTCScheduler::setup() {
   service_name = service_sched_name+service_name;
   register_service(&RTCScheduler::on_erase_all_schedules_recieved, service_name); 
 
-  service_name = "__send_text_schedule";
+  service_name = "_send_text_schedule";
   service_name = service_sched_name+service_name;
                   
-  register_service(&RTCScheduler::on_text_schedule_recieved, service_name,{"schedule_slot_id", "events"});
+  register_service(&RTCScheduler::on_text_schedule_recieved, service_name,{"schedule_slot_id", "events"}); */
 
 // TODO Need to validate each slot and keep a list of slot validity
        // Check schedule data in eeprom is valid
@@ -58,7 +66,17 @@ void RTCScheduler::loop() {
 void RTCScheduler::dump_config(){
     ESP_LOGCONFIG(TAG, "Scheduler component");
     ESP_LOGCONFIG(TAG, "RTC Scheduler Controller -- %s", this->name_.c_str());
+     std::string service_sched_name;
+     service_sched_name =  this->name_;
+ // remove the spaces
+ for (size_t i = 0; i < service_sched_name.size(); ++i) {
+    if (service_sched_name[i] == ' ') {
+        service_sched_name.replace(i, 1, "_");
+    }
+}
+ESP_LOGCONFIG(TAG, "RTC Scheduler Controller name -- %s", service_sched_name.c_str());
     // TODO dump config for EEPROM and Switches
+    
 }
 void RTCScheduler:: test(){
                 ESP_LOGD(TAG, "Mem size in bytes: %d",this->storage_->length());
@@ -68,6 +86,7 @@ void RTCScheduler:: test(){
                 this->storage_->get(10, myRead2); //location to read, thing to put data into
                 ESP_LOGD(TAG, "I read: %d",myRead2 );
 }
+
 void RTCScheduler:: send_log_message_to_HA(String level, String logMessage, String sender)
 {
        call_homeassistant_service("system_log.write", {
@@ -84,23 +103,26 @@ void RTCScheduler:: send_log_message_to_HA(String level, String logMessage, Stri
       {"my_value", "500"},
     });
 }
-void RTCScheduler::on_text_schedule_recieved(int schedule_slot_id, std::string events) {
-    ESP_LOGD(TAG, "Text Schedule Slot %d   recieved", schedule_slot_id);
+void RTCScheduler::on_text_schedule_recieved(int schedule_slot_id, std::string &events) {
+    ESP_LOGD(TAG, "%s Text Schedule Slot %d   recieved %s",this->name_.c_str(), schedule_slot_id, events.c_str());
+    this->parent_->send_notification_to_ha("Text Rxed","Have rx a text schedule","103");
 }
-void RTCScheduler::on_schedule_recieved(int schedule_slot_id, std::vector<int> days ,std::vector<int> hours ,std::vector<int> minutes, std::vector<std::string> action) {
-    ESP_LOGD(TAG, "Schedule Slot %d   recieved", schedule_slot_id);
-    ESP_LOGD(TAG, "Entries Count - Day:%d, Hours: %d Mins:%d, Actions: %d",days.size(),hours.size(), minutes.size(), action.size() );
+
+void RTCScheduler::on_schedule_recieved(int schedule_slot_id,  std::vector<int> days ,std::vector<int> hours ,std::vector<int> minutes, std::vector<std::string> &actions) {
+    ESP_LOGD(TAG, "%s Schedule Slot %d   recieved",this->name_.c_str(), schedule_slot_id);
+    ESP_LOGD(TAG, "Entries Count - Day:%d, Hours: %d Mins:%d, Actions: %d",days.size(),hours.size(), minutes.size(), actions.size() );
      send_log_message_to_HA("error","The test message from Controller","ESPHome: boiler_controller");
     // Verify and write data to eeprom
    
     // Setup next schedule next event per switch
 }
+
 void  RTCScheduler::on_schedule_erase_recieved(int schedule_slot_id){
-    ESP_LOGD(TAG, "Schedule Slot %d  erase recieved", schedule_slot_id);
+    ESP_LOGD(TAG, "%s Schedule Slot %d  erase recieved",this->name_.c_str() ,schedule_slot_id);
     // Mark slot as inactive and clear data
 }
 void  RTCScheduler::on_erase_all_schedules_recieved(){
-        ESP_LOGD(TAG, " Erase all schedules recieved");
+        ESP_LOGD(TAG, "%s Erase all schedules recieved",this->name_.c_str());
         // Mark all slots as inactive and clear data and disable schedule loop
 }
 void RTCScheduler::add_controller(RTCScheduler *other_controller)
@@ -186,6 +208,7 @@ RTCSchedulerItemMode_Select* RTCScheduler::get_scheduled_item_from_slot(uint8_t 
   }
   return nullptr;
 }
+
 //******************************************************************************************
 
 RTCSchedulerControllerSwitch::RTCSchedulerControllerSwitch()
