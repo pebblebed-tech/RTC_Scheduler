@@ -75,7 +75,6 @@ void  RTCSchedulerHub::on_schedule_erase_recieved(std::string scheduler_id,int s
 }
 void  RTCSchedulerHub::on_erase_all_schedules_recieved(std::string scheduler_id){
         ESP_LOGD(TAG, "Hub Erase all schedules recieved sched %s",scheduler_id.c_str());
-        // Mark all slots as inactive and clear data and disable schedule loop
         RTCScheduler *the_scheduler = this->get_scheduler(scheduler_id);
         if (the_scheduler != nullptr)
           the_scheduler->on_erase_all_schedules_recieved();

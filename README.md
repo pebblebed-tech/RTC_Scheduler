@@ -63,9 +63,9 @@ rtc_scheduler:
 
 **storage** *(**Required**, string)* : This is the ID of the storage component.
 
-**storage_offset** *(**Required**, int)* : This is offset from the start of the E2 device useful if you have multiple schedulers configured.
+**storage_offset** *(**Required**, int)* : This is offset in bytes from the start of the E2 device useful if you have multiple schedulers configured.
 
-**storage_size** *(**Required**, int)* : This is size of the E2 device in bits.
+**storage_size** *(**Required**, int)* : This is size of the E2 device in bytes.
 
 **max_events_per_switch** *(**Required**, int)* : This is number of events each slot can hold.
 
@@ -110,7 +110,7 @@ Send a schedule for a slot.
 #### parameters
 
 - ```std::string ``` - Takes the form of Slot ID, Event, Event, ..... 
-- Event encodes as this DHHMMS where state is either ON or OFF
+- Event encodes as this DHHMMState where state is either ON or OFF
 - Example "1,61140ON,61400OFF
 ### erase_schedule
 Erase a single slot schedule

@@ -18,6 +18,7 @@ class RTCSchedulerHub : public Component, public api::CustomAPIDevice,  public E
    void setup() override;
    void loop() override;
    void dump_config() override;
+   float get_setup_priority() const override { return setup_priority::HARDWARE_LATE; }
    void add_controller(RTCScheduler *schedule_controller);
    void on_text_schedule_recieved(std::string scheduler_id,int schedule_slot_id, std::string events);
    void on_schedule_recieved(std::string scheduler_id,int schedule_slot_id, std::vector<int> days ,std::vector<int> hours ,std::vector<int> minutes, std::vector<std::string> actions);
