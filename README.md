@@ -8,6 +8,10 @@ The scheduler has the following structure
       --- Switches (1..n)
 Each scheduled switch can have multiple timing events that define on and off times upto ``` max_events_per_switch ```.
 Day 0 - 7, Hour 0 - 23, Minutes 0 - 59, State (On / Off)
+Currently there are 2 ways to get the schedule from Home Assistant
+* Text string supplied by service call. This is limited 256 characters so given it takes 9 characters to describe an event this equates to 28 events in a week.
+* A service call that takes a complex structure that can be used with the supplied python script and a HACS scheduler. See https://github.com/nielsfaber/scheduler-component
+* In the future a version a  built in home assistant scheduler helper will be produced and will call the data service. Fingers crossed 
 
 ## Addtional Hardware required 
 To acheive this the software requires a couple of hardware components (DS3231 & 24LCxx E2). The easiest way to add these devices is via a ZS-042 (https://www.google.com/search?q=zs-04). These devices are I2C so the device configuration needs setup I2C with the appropiate pin configurations for your device.
