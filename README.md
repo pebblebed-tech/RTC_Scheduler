@@ -1,7 +1,15 @@
 # RTC_Scheduler
 > :warning:  **Note This is a work in progress and is not fully working yet.**
 
-This is a realtime scheduler component for ESPHome that allows the scheduling of switches independantly of Home Assistant. This ensures that scheduled switched equipment will always opperate regardless of the availability of Home Assistant and the network.
+This is a realtime weekly scheduler component for ESPHome that allows the scheduling of switches independantly of Home Assistant. This ensures that scheduled switched equipment will always opperate regardless of the availability of Home Assistant and the network. The schedule is supplied by Home Assistant via services this is either text string or complex data structure.
+The scheduler has the following structure
+-Scheduler Hub 
+  -- Schedule Controller (1.. n)
+      --- Switches (1..n)
+Each scheduled switch can have multiple timing events that define on and off times upto ``` max_events_per_switch ```.
+Day 0 - 7, Hour 0 - 23, Minutes 0 - 59, State (On / Off)
+
+## Addtional Hardware required 
 To acheive this the software requires a couple of hardware components (DS3231 & 24LCxx E2). The easiest way to add these devices is via a ZS-042 (https://www.google.com/search?q=zs-04). These devices are I2C so the device configuration needs setup I2C with the appropiate pin configurations for your device.
 
 > :warning:  **Note there is a modification needed to the module. Remove the 1N4148 and/or the 200R resistor and everything is fine.**
@@ -27,36 +35,38 @@ ext_eeprom_component:
   memorySize: 4096
 rtc_scheduler:
   - id: scheduler_hub
-    - id: scheduler_1
-      storage: ext_eeprom_component_1
-      storage_offset: 1000
-      storage_size: 32768
-      max_events_per_switch: 56
-      main_switch: 
-        name: "Heater Scheduler"
-        on_turn_on:
-          then:
-            - logger.log: "Heater Turned On by action!"
-      
-      switches:
-        - scheduled_mode: "Element 1 Mode"
-          scheduled_switch: 
-            name: "Element 1"
-            on_turn_on:
-              then:
-              - logger.log: "element 1 Turned On by action!"
-          scheduled_switch_id: relay3
-          scheduler_slot: 1
-          scheduled_status: "Element 1 Status"
-          scheduled_next_event_text: "Element 1 Next Event"
-          
-          scheduled_indicator: "Element 1 Indicator"
-        - scheduled_switch: "Element 2"
-          scheduled_switch_id: relay4 
-          scheduler_slot: 2  
-          scheduled_status: "Element 2 Status"
-          scheduled_mode: "Element 2 Mode"
-          scheduled_indicator: "Element 2 Indicator"
+    schedulers:
+      - id: scheduler_1
+        storage: ext_eeprom_component_1
+        storage_offset: 1000
+        storage_size: 32768
+        max_events_per_switch: 56
+        schedule_controller_status_id: "Heater Sheduler Status"
+        scheduler_mode: "Heater Controller Mode"
+        scheduler_ind: "Heater Indicator"
+        main_switch: 
+          name: "Heater Scheduler"
+          on_turn_on:
+            then:
+              - logger.log: "Heater Turned On by action!"
+        switches:
+          - scheduled_mode: "Element 1 Mode"
+            scheduled_switch: 
+              name: "Element 1"
+              on_turn_on:
+                then:
+                - logger.log: "element 1 Turned On by action!"
+            scheduled_switch_id: relay3
+            scheduler_slot: 1
+            scheduled_status: "Element 1 Status"
+            scheduled_next_event_text: "Element 1 Next Event"
+            scheduled_indicator: "Element 1 Indicator"
+          - scheduled_switch: "Element 2"
+            scheduled_switch_id: relay4 
+            scheduler_slot: 2  
+            scheduled_status: "Element 2 Status"
+            scheduled_mode: "Element 2 Mode"
+            scheduled_indicator: "Element 2 Indicator"    
 ```
 ## Configuration variables:
 **id** *(Required)* Manually specify the ID used for code generation.
@@ -105,10 +115,10 @@ Send a schedule for a slot.
 - ```std::vector<int> hours``` - Array ints representing hours (0-23)
 - ```std::vector<int> minutes``` - Array ints representing hours (0-59)
 - ```std::vector<std::string> action``` - Currently "ON" or "OfFF" to be expanded to manage state. 
+
 ### send_schedule_text
 Send a schedule for a slot.
 #### parameters
-
 - ```std::string ``` - Takes the form of Slot ID, Event, Event, ..... 
 - Event encodes as this DHHMMState where state is either ON or OFF
 - Example "1,61140ON,61400OFF

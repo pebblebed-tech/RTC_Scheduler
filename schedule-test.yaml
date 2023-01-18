@@ -99,7 +99,6 @@ rtc_scheduler:
           on_turn_on:
             then:
               - logger.log: "Heater Turned On by action!"
-        
         switches:
           - scheduled_mode: "Element 1 Mode"
             scheduled_switch: 
@@ -111,7 +110,6 @@ rtc_scheduler:
             scheduler_slot: 1
             scheduled_status: "Element 1 Status"
             scheduled_next_event_text: "Element 1 Next Event"
-            
             scheduled_indicator: "Element 1 Indicator"
           - scheduled_switch: "Element 2"
             scheduled_switch_id: relay4 
