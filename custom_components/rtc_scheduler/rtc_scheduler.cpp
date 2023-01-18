@@ -10,42 +10,51 @@ namespace esphome {
 namespace rtc_scheduler {
 
 static const char *TAG = "rtc_scheduler";
-
+// TODO Add timing code
 RTCScheduler::RTCScheduler() {}
 RTCScheduler::RTCScheduler(const std::string &name) : EntityBase(name) {}
 
 void RTCScheduler::setup() {
+  storage_valid_ = false;
   // Calc the scheduler slot size
-  this->slot_size_ = (this->max_switch_events_ * 2) + 4 // convert numbers events to bytes and add 4 for config words
+  this->slot_size_ = (this->max_switch_events_ * 2) + 4; // convert numbers events to bytes and add 4 for config words
   //  lets check eeprom is valid
   if (storage_!=nullptr)
     {
       uint16_t data1;
       uint16_t data2;
       uint16_t storage_address;
-      this->storage_->get(this->storage_offset, data1);
+      this->storage_->get(this->storage_offset_, data1);
       this->storage_->get(storage_offset_+2, data2);
-      if ((data1 ==SCHEDULER_VALID_WORD_1) AND (data2 == SCHEDULER_VALID_WORD_2))
+      if (( data1 == SCHEDULER_VALID_WORD_1 ) and ( data2 == SCHEDULER_VALID_WORD_2 ))
         {
           storage_valid_ = true;
-          //TODO read the slots and configure the valid items
+           ESP_LOGD(TAG, "Scheduler good - looking for valid slots");
           for (uint16_t i = 0; i < this->scheduled_items_.size(); i++)  // step through the items in the slot
             {
                // Check if slot is valid, if not move on
-                this->storage_->get(this->get_slot_starting address(i),data1); 
+                this->storage_->get(this->get_slot_starting_address(i),data1); 
                 if (data1 == SLOT_VALID_WORD_1)
                 {
                      // Check if checksum is correct
                     if (this->check_the_cksm(i))
                     {
                       // Now checks have passed set item to valid
+                      this->set_slot_valid(i,true);
+                       ESP_LOGD(TAG, "Scheduler - Slot %d valid", i+1);
+                       //TODO Need set sw state of the item depending on mode and previous state from schedule
+                       
                     }
-                    
-                
-                
-              
-
-               
+                    else
+                    {
+                        // Checksum failed so set item to invalid
+                      this->set_slot_valid(i,false);
+                      ESP_LOGD(TAG, "Scheduler - Slot %d checksum failed", i+1);
+                    }
+                }
+                else
+                {
+                   ESP_LOGD(TAG, "Scheduler - Slot %d not valid", i+1);
                 }
             }
 
@@ -55,27 +64,32 @@ void RTCScheduler::setup() {
           // not configured so configure it now
           data1=SCHEDULER_VALID_WORD_1;
           data2=SCHEDULER_VALID_WORD_2;
-          this->storage_->put(this->storage_offset,data1);
-          this->storage_->put(this->storage_offset+2,data2);
+          this->storage_->put(this->storage_offset_,data1);
+          this->storage_->put(this->storage_offset_+2,data2);
           storage_valid_ = true;
           data1 = SLOT_INVALID_WORD_1;
           // by definition all slots in this scheduler are invalid
           // can happen if the number of slots of previous scheduler changes
           // Now setup the slots for this scheuler (This means setting them not valid)
           // first check the number of slots and max events for this scheduler are valid for safety
-          if ((this->max_switch_events_>=1) AND (this->scheduled_items_count_>=1))
+          if ((this->max_switch_events_>=1) and (this->scheduled_items_count_>=1))
             {
-              for (uint16_t i = 0; i < this->scheduled_items_.size(); i++)  // step through the items in the slot
+              for (uint16_t i = 0; i < this->scheduled_items_.size(); i++)  // step through the sw items
                { 
-                this->storage_->put(this->get_slot_starting address(i),data1);
+                this->storage_->put(this->get_slot_starting_address(i),data1);
+                //  set item to invalid
+                this->set_slot_valid(i,false);
                } 
-              // TODO Send message to ha to tell the user to programme the schedules  
+              // TODO Send message to ha to tell the user to programme the schedules
+              this->parent_->send_notification_to_ha("Scheduler Ready", "Need to send schedule to"+this->name_+"for scheduler to opperate","432" );
+              
+               ESP_LOGD(TAG, "Scheduler storage ready - HA user needs to send schedules");  
             }
           else
             {
               // Should never get here as config validation should cover this
               storage_valid_ = false;
-              ESP_LOGD(TAG, "Config not - scheduler will not opperate");
+              ESP_LOGD(TAG, "Config not correct - scheduler will not opperate");
             }
         }
     }
@@ -84,6 +98,7 @@ void RTCScheduler::setup() {
         storage_valid_ = false;
         ESP_LOGD(TAG, "Storage not detected - scheduler will not opperate");
         // TODO raise error with HA
+        this->parent_->send_notification_to_ha("Scheduler Error", "Storage not detected","433" );
     }
 }
 
@@ -108,6 +123,7 @@ void RTCScheduler::dump_config(){
 }
 ESP_LOGCONFIG(TAG, "RTC Scheduler Controller name -- %s", service_sched_name.c_str());
     // TODO dump config for EEPROM and Switches
+
     
 }
 void RTCScheduler:: test(){
@@ -125,6 +141,7 @@ void RTCScheduler::on_text_schedule_recieved(int schedule_slot_id, std::string &
     this->parent_->send_notification_to_ha("Text Rxed","Have rx a text schedule","103");
     struct_schedule_event previous_event_;
     struct_schedule_event current_event_;
+    //TODO convert to internal format and store it
 
 }
 
@@ -132,6 +149,7 @@ void RTCScheduler::on_schedule_recieved(int schedule_slot_id,  std::vector<int> 
     ESP_LOGD(TAG, "%s Schedule Slot %d   recieved",this->name_.c_str(), schedule_slot_id);
     ESP_LOGD(TAG, "Entries Count - Day:%d, Hours: %d Mins:%d, Actions: %d",days.size(),hours.size(), minutes.size(), actions.size() );
     this->parent_->send_log_message_to_ha("error","The test message from Controller","ESPHome: boiler_controller");
+    //TODO convert to internal format and store it
     // Verify and write data to eeprom
    
     // Setup next schedule next event per switch
@@ -139,11 +157,11 @@ void RTCScheduler::on_schedule_recieved(int schedule_slot_id,  std::vector<int> 
 
 void  RTCScheduler::on_schedule_erase_recieved(int schedule_slot_id){
     ESP_LOGD(TAG, "%s Schedule Slot %d  erase recieved",this->name_.c_str() ,schedule_slot_id);
-    // Mark slot as inactive and clear data
+    // TODO Mark slot as inactive and clear data
 }
 void  RTCScheduler::on_erase_all_schedules_recieved(){
         ESP_LOGD(TAG, "%s Erase all schedules recieved",this->name_.c_str());
-        // Mark all slots as inactive and clear data and disable schedule loop
+        // TODO Mark all slots as inactive and clear data and disable schedule loop
 }
 void RTCScheduler::add_controller(RTCScheduler *other_controller)
 {
@@ -215,16 +233,16 @@ RTCSchedulerItemMode_Select* RTCScheduler::get_scheduled_item_from_slot(uint8_t 
   }
   return nullptr;
 }
-uint16_t RTCScheduler::get_slot_starting address(uint8_t slot)
+uint16_t RTCScheduler::get_slot_starting_address(uint8_t slot)
 {
   // calc the address of the start of the slot (offset + 4 bytes for scheduler valid) plus (slot size in bytes  * the slot)
-  return this->storage_offset + 4 + (this->slot_size_  * slot);
+  return ((this->storage_offset_ + 4) + (this->slot_size_  * slot));
 }
 bool RTCScheduler::check_the_cksm(uint8_t slot)
 {
-  uint16_t = stored_checksum;
+  uint16_t stored_checksum;
   // read what is stored
-  this->storage_->get(get_slot_starting address(i)+2,stored_checksum); 
+  this->storage_->get(get_slot_starting_address(slot)+2,stored_checksum); 
   if (this->calculate_slot_cksm(slot) == stored_checksum)
   {
     return true;
@@ -233,10 +251,28 @@ bool RTCScheduler::check_the_cksm(uint8_t slot)
 }
 uint16_t RTCScheduler::calculate_slot_cksm(uint8_t slot)
 {
-    //TODO implement the checksum routine
+  uint16_t data_addr = get_slot_starting_address(slot)+4;  
+  uint16_t len = this->slot_size_ * 2; // 16bit word per event so * 2
+  uint16_t crc = 0xFFFF;
+  uint8_t data;
+  while (len--) {
+    // read the data from storage
+    this->storage_->get(data_addr, data);
+    crc ^= data;
+    data_addr++;
+    for (uint8_t i = 0; i < 8; i++) {
+      if ((crc & 0x01) != 0) {
+        crc >>= 1;
+        crc ^= 0xA001;
+      } else {
+        crc >>= 1;
+      }
+    }
+  }
+  return crc;
 }
-//*************************************************************************************
-void RTCScheduler::Test_Set_Slot_Valid(uint8_t item_slot_number, bool valid)
+
+void RTCScheduler::set_slot_valid(uint8_t item_slot_number, bool valid)
 {
   RTCSchedulerItemMode_Select* sched_item = get_scheduled_item_from_slot(item_slot_number);
   if(sched_item != nullptr){
@@ -244,7 +280,7 @@ void RTCScheduler::Test_Set_Slot_Valid(uint8_t item_slot_number, bool valid)
     ESP_LOGD(TAG, "setting slot %d", item_slot_number);
   }
 }
-void RTCScheduler::Test_Set_Slot_Sw(uint8_t item_slot_number, bool sw_state)
+void RTCScheduler::set_slot_sw_state(uint8_t item_slot_number, bool sw_state)
 {
   RTCSchedulerItemMode_Select* sched_item = get_scheduled_item_from_slot(item_slot_number);
   if(sched_item != nullptr)

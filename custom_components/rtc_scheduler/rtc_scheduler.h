@@ -54,9 +54,11 @@ struct struct_schedule_storage
   char action_str[6];
 }; */
 static const uint16_t SCHEDULER_VALID_WORD_1 = 0xAA55;
+//static const uint16_t SCHEDULER_VALID_WORD_1 = 0xAA66;
 static const uint16_t SCHEDULER_VALID_WORD_2 = 0xF0F0;
 
 static const uint16_t SLOT_INVALID_WORD_1 = 0x55AA;
+//static const uint16_t SLOT_INVALID_WORD_1 = 0x66AA;
 static const uint16_t SLOT_VALID_WORD_1 = 0x5A5A;
 
 
@@ -130,12 +132,10 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
                         RTCSchedulerItemMode_Select *item_mode_select,
                         binary_sensor::BinarySensor* item_on_indicator
                         );
-
     void set_parent(RTCSchedulerHub *parent) { this->parent_ = parent; };
-    uint16_t RTCScheduler::get_slot_starting address(uint8_t slot);
-    // Temp testcode
-    void Test_Set_Slot_Valid(uint8_t item_slot_number, bool valid);
-    void Test_Set_Slot_Sw(uint8_t item_slot_number, bool sw_state);
+    
+    void set_slot_valid(uint8_t item_slot_number, bool valid);
+    void set_slot_sw_state(uint8_t item_slot_number, bool sw_state);
     
 
   protected:
@@ -147,6 +147,7 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
     bool storage_valid_ = false;
     bool check_the_cksm(uint8_t slot);
     uint16_t calculate_slot_cksm(uint8_t slot);
+    uint16_t get_slot_starting_address(uint8_t slot);
     
     RTCSchedulerItemMode_Select* get_scheduled_item_from_slot(uint8_t slot);
     // Other Controller instances we should be aware of (used to check if slots are conflicting)

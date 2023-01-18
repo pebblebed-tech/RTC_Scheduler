@@ -15,25 +15,17 @@ void RTCSchedulerHub::setup()
 {
   std::string service_name;
   service_name = "send_schedule";
-  //service_name = service_sched_name+service_name;
   register_service(&RTCSchedulerHub::on_schedule_recieved, service_name,
                    {"scheduler_id","schedule_slot_id",  "days", "hours","minutes","actions"});
   
   service_name = "erase_schedule";
-  //service_name = service_sched_name+service_name;
   register_service(&RTCSchedulerHub::on_schedule_erase_recieved, service_name,{"scheduler_id","schedule_slot_id"});
 
   service_name = "erase_all_schedules";
-  //service_name = service_sched_name+service_name;
   register_service(&RTCSchedulerHub::on_erase_all_schedules_recieved, service_name,{"scheduler_id"}); 
 
-  service_name = "send_text_schedule";
-  //service_name = service_sched_name+service_name;               
+  service_name = "send_text_schedule";             
   register_service(&RTCSchedulerHub::on_text_schedule_recieved, service_name,{"scheduler_id","schedule_slot_id", "events"}); 
-
-// TODO Need to validate each slot and keep a list of slot validity
-       // Check schedule data in eeprom is valid
-        // Setup next schedule next event per switch
 }
 void RTCSchedulerHub::loop()
 {
@@ -46,8 +38,7 @@ void RTCSchedulerHub::dump_config()
 }
 void RTCSchedulerHub::add_controller(RTCScheduler *schedule_controller)
 {
-  //auto &controller = schedule_controller;
-  //controller->set_parent(this);
+
   schedule_controller->set_parent(this);
   this->schedule_controllers_.push_back(schedule_controller);
 
