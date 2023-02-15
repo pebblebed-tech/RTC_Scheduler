@@ -50,6 +50,60 @@ void ExtEepromComponent:: test(){
                 this->readStringFromEEPROM(45, &myRead4); //location to read, thing to put data into
                 ESP_LOGD(TAG,"I read: %s",myRead4.c_str());
 }
+
+void ExtEepromComponent::dump_EEPROM(uint32_t start_addr,uint16_t word_count ){
+  std::vector<uint16_t> words;
+  uint16_t address;
+  uint16_t data;
+  std::string res;
+  char adbuf[8];
+  char buf[5];
+  size_t len;
+  address = start_addr;
+  while (address < (word_count + start_addr))
+  {
+    for (size_t i = address; i < (address+16); i+=2)
+    {
+      this->get(i, data);
+      words.push_back(data);
+    }
+    //this->log_hex(words,address);
+    sprintf(adbuf, "%04X : ", address);
+    res = adbuf;
+    len = words.size();
+    for (size_t u = 0; u < len; u++) {
+      if (u > 0) {
+        res += " ";
+      }
+      sprintf(buf, "%4X", words[u]);
+      res += buf;
+    }
+    ESP_LOGD(TAG, "%s", res.c_str()); 
+    words.clear();
+    address = address +16; 
+  }
+}
+
+void ExtEepromComponent::log_hex( std::vector<uint16_t> words, uint16_t address) {
+  std::string res;
+  char adbuf[8];
+  char buf[5];
+  sprintf(adbuf, "%04X : ", address);
+  res += adbuf;
+  
+  size_t len = words.size();
+  
+  for (size_t i = 0; i < len; i++) {
+    if (i > 0) {
+      res += " ";
+    }
+    sprintf(buf, "%4X", words[i]);
+    res += buf;
+  }
+  ESP_LOGD(TAG, "%s", res.c_str());
+
+}
+
 bool ExtEepromComponent::begin(uint8_t deviceAddress, TwoWire &wirePort)
 {
   settings.i2cPort = &wirePort; //Grab which port the user wants us to use

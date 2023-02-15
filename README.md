@@ -124,9 +124,12 @@ Send a schedule for a slot.
 ### send_schedule_text
 Send a schedule for a slot.
 #### parameters
+- ```scheduler_id string``` - The schedule controller 
+- ```schedule_slot_id int``` - The slot to be updated.
 - ```std::string ``` - Takes the form of Slot ID, Event, Event, ..... 
 - Event encodes as this DHHMMState where state is either ON or OFF
-- Example "1,61140ON,61400OFF
+- Example "61140ON,61400OFF"
+- Turn on Saturday at 11:40, Turn off Saturday at 14:00
 ### erase_schedule
 Erase a single slot schedule
 #### parameters

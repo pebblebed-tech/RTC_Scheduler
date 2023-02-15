@@ -40,6 +40,7 @@ void RTCSchedulerHub::add_controller(RTCScheduler *schedule_controller)
 {
 
   schedule_controller->set_parent(this);
+  schedule_controller->set_storage(this->storage_);
   this->schedule_controllers_.push_back(schedule_controller);
 
 }
@@ -97,7 +98,10 @@ void RTCSchedulerHub::send_log_message_to_ha(std::string level, std::string logM
 //        fire_homeassistant_event("esphome.something_happened", {
 //      {"my_value", "500"},});
 }
-
+void RTCSchedulerHub::set_storage(ext_eeprom_component::ExtEepromComponent *storage)
+{
+  this->storage_ = storage;
+}
 RTCScheduler *RTCSchedulerHub::get_scheduler(std::string &scheduler_id)
 {
         for (auto &controller : this->schedule_controllers_)
@@ -109,6 +113,18 @@ RTCScheduler *RTCSchedulerHub::get_scheduler(std::string &scheduler_id)
           }
         }
         return nullptr;
+}
+void RTCSchedulerHub::display_storage_status()
+{
+  std::string scheduler_id;
+  bool status;
+  for (auto &controller : this->schedule_controllers_)
+        { 
+          
+         scheduler_id = controller->get_object_id();
+         status = controller->get_storage_status();
+         ESP_LOGD(TAG, "Storage for %s is %d",scheduler_id.c_str(),status);
+        }
 }
 } // namespace rtc_scheduler
 }  // namespace esphome

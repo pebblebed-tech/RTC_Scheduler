@@ -97,9 +97,7 @@ def validate_scheduler(config):
         for scheduler_controller in scheduler_hub[CONF_SCHEDULERS]:
             requirements = [
                     CONF_MAIN_SWITCH,
-                    CONF_EXT_EEPROM,
                     CONF_EXT_EEPROM_OFFSET,
-                    CONF_EXT_EEPROM_SIZE,
                     CONF_MAX_EVENTS_PER_SW,
                     
                 ]
@@ -177,10 +175,9 @@ SCHEDULER_CONTROLLER_SCHEMA = cv.Schema(
     {
 
         cv.GenerateID(): cv.declare_id(RTCScheduler),
-        cv.Required(CONF_EXT_EEPROM): cv.use_id(ext_eeprom_component.ExtEepromComponent),
         cv.Required(CONF_EXT_EEPROM_OFFSET): cv.uint16_t,
         cv.Required(CONF_MAX_EVENTS_PER_SW): cv.uint16_t,
-        cv.Required(CONF_EXT_EEPROM_SIZE): cv.uint32_t,
+
         
         cv.Required(CONF_SCHEDULER_IND): cv.maybe_simple_value(
             binary_sensor.binary_sensor_schema().extend(),
@@ -206,6 +203,7 @@ SCHEDULER_CONTROLLER_SCHEMA = cv.Schema(
 SCHEDULER_HUB_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(RTCSchedulerHub),
+        cv.Required(CONF_EXT_EEPROM): cv.use_id(ext_eeprom_component.ExtEepromComponent),
         cv.Required(CONF_SCHEDULERS): cv.ensure_list(SCHEDULER_CONTROLLER_SCHEMA),
     }
 ).extend(cv.ENTITY_BASE_SCHEMA)
@@ -236,6 +234,8 @@ async def to_code(config):
             #scheduler_controller[CONF_MAIN_SWITCH][CONF_NAME],
         )
         await cg.register_component(varh, scheduler_hub)
+        store = await cg.get_variable(scheduler_hub[CONF_EXT_EEPROM])
+        cg.add(varh.set_storage(store))
         for scheduler_controller in scheduler_hub[CONF_SCHEDULERS]:
     #for scheduler_controller in config:
         
@@ -244,8 +244,8 @@ async def to_code(config):
                 scheduler_controller[CONF_MAIN_SWITCH][CONF_NAME],
                 )
             await cg.register_component(var, scheduler_controller)
-            store = await cg.get_variable(scheduler_controller[CONF_EXT_EEPROM])
-            cg.add(var.set_storage(store))
+#            store = await cg.get_variable(scheduler_controller[CONF_EXT_EEPROM])
+#            cg.add(var.set_storage(store))
             cg.add(var.set_storage_offset(
                 scheduler_controller[CONF_EXT_EEPROM_OFFSET]))
             cg.add(var.set_events_per_switch(

@@ -136,11 +136,12 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
     
     void set_slot_valid(uint8_t item_slot_number, bool valid);
     void set_slot_sw_state(uint8_t item_slot_number, bool sw_state);
-    
+    bool get_storage_status();
 
   protected:
     ext_eeprom_component::ExtEepromComponent *storage_;
     uint16_t storage_offset_;
+    bool storage_configured = false;
     uint8_t scheduled_items_count_ = 0;      // Number active scheduled items
     uint16_t slot_size_ = 0;            // This is num of bytes for a slot
     uint16_t max_switch_events_;
@@ -148,7 +149,7 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
     bool check_the_cksm(uint8_t slot);
     uint16_t calculate_slot_cksm(uint8_t slot);
     uint16_t get_slot_starting_address(uint8_t slot);
-    
+    void configure_storage();
     RTCSchedulerItemMode_Select* get_scheduled_item_from_slot(uint8_t slot);
     // Other Controller instances we should be aware of (used to check if slots are conflicting)
     std::vector<RTCScheduler *> other_controllers_;

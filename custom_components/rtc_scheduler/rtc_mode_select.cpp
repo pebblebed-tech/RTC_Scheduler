@@ -270,7 +270,7 @@ void RTCSchedulerItemMode_Select::control(const std::string &value)
   auto options = this->traits.get_options();
   size_t index = std::find(options.begin(), options.end(), value_Internal) - options.begin();
   this->pref_.save(&index);
-  ESP_LOGD(TAG, "Saving slot %d index %d",index);
+  ESP_LOGD(TAG, "Saving slot %d index %d",index,index);
   this->item_mode_ = static_cast<ItemMode>(index);
   adjustItemInternalState();
 }

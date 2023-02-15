@@ -15,6 +15,39 @@ RTCScheduler::RTCScheduler() {}
 RTCScheduler::RTCScheduler(const std::string &name) : EntityBase(name) {}
 
 void RTCScheduler::setup() {
+
+}
+
+void RTCScheduler::loop() {
+ if (!storage_configured)
+ {
+  this->configure_storage();
+ }
+    
+
+// Check schedule events against current time
+// If event time is in past then set switch states per schedule unless override is active
+// Update next schedule next event per switch
+}
+
+void RTCScheduler::dump_config(){
+    ESP_LOGCONFIG(TAG, "Scheduler component");
+    ESP_LOGCONFIG(TAG, "RTC Scheduler Controller -- %s", this->name_.c_str());
+     std::string service_sched_name;
+     service_sched_name =  this->name_;
+ // remove the spaces
+ for (size_t i = 0; i < service_sched_name.size(); ++i) {
+    if (service_sched_name[i] == ' ') {
+        service_sched_name.replace(i, 1, "_");
+    }
+}
+ESP_LOGCONFIG(TAG, "RTC Scheduler Controller name -- %s", service_sched_name.c_str());
+    // TODO dump config for EEPROM and Switches
+
+    
+}
+void RTCScheduler::configure_storage(){
+  storage_configured = true;
   storage_valid_ = false;
   // Calc the scheduler slot size
   this->slot_size_ = (this->max_switch_events_ * 2) + 4; // convert numbers events to bytes and add 4 for config words
@@ -101,31 +134,6 @@ void RTCScheduler::setup() {
         this->parent_->send_notification_to_ha("Scheduler Error", "Storage not detected","433" );
     }
 }
-
-void RTCScheduler::loop() {
-    
-
-// Check schedulke events against current time
-// If event time is in past then set switch states per schedule unless override is active
-// Update next schedule next event per switch
-}
-
-void RTCScheduler::dump_config(){
-    ESP_LOGCONFIG(TAG, "Scheduler component");
-    ESP_LOGCONFIG(TAG, "RTC Scheduler Controller -- %s", this->name_.c_str());
-     std::string service_sched_name;
-     service_sched_name =  this->name_;
- // remove the spaces
- for (size_t i = 0; i < service_sched_name.size(); ++i) {
-    if (service_sched_name[i] == ' ') {
-        service_sched_name.replace(i, 1, "_");
-    }
-}
-ESP_LOGCONFIG(TAG, "RTC Scheduler Controller name -- %s", service_sched_name.c_str());
-    // TODO dump config for EEPROM and Switches
-
-    
-}
 void RTCScheduler:: test(){
                 ESP_LOGD(TAG, "Mem size in bytes: %d",this->storage_->length());
                 int myValue2 = -366;
@@ -139,8 +147,7 @@ void RTCScheduler:: test(){
 void RTCScheduler::on_text_schedule_recieved(int schedule_slot_id, std::string &events) {
     ESP_LOGD(TAG, "%s Text Schedule Slot %d   recieved %s",this->name_.c_str(), schedule_slot_id, events.c_str());
     this->parent_->send_notification_to_ha("Text Rxed","Have rx a text schedule","103");
-    struct_schedule_event previous_event_;
-    struct_schedule_event current_event_;
+    
     //TODO convert to internal format and store it
 
 }
@@ -287,7 +294,11 @@ void RTCScheduler::set_slot_sw_state(uint8_t item_slot_number, bool sw_state)
     sched_item->set_scheduled_item_state(sw_state);
 }
 
-
+bool RTCScheduler::get_storage_status()
+{
+  return storage_valid_;
+  
+}
 //******************************************************************************************
 
 RTCSchedulerControllerSwitch::RTCSchedulerControllerSwitch()

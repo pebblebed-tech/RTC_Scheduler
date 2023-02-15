@@ -31,7 +31,8 @@ class ExtEepromComponent : public i2c::I2CDevice, public Component {
   void read(uint32_t eepromLocation, uint8_t *buff, uint16_t bufferSize);
   void write(uint32_t eepromLocation, uint8_t dataToWrite);
   void write(uint32_t eepromLocation, const uint8_t *dataToWrite, uint16_t blockSize);
-
+  void dump_EEPROM(uint32_t start_addr,uint16_t word_count );
+  void log_hex( std::vector<uint16_t> words, uint16_t address);
   bool begin(uint8_t deviceAddress = 0b01010111, TwoWire &wirePort = Wire); //By default use the Wire port
   bool isConnected(uint8_t i2cAddress = 255);
   bool isBusy(uint8_t i2cAddress = 255);
