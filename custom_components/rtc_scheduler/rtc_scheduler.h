@@ -137,6 +137,7 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
     void set_slot_valid(uint8_t item_slot_number, bool valid);
     void set_slot_sw_state(uint8_t item_slot_number, bool sw_state);
     bool get_storage_status();
+    std::vector<uint16_t> split_and_convert(std::string s);
 
   protected:
     ext_eeprom_component::ExtEepromComponent *storage_;

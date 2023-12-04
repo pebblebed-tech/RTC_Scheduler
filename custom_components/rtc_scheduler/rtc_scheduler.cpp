@@ -299,6 +299,58 @@ bool RTCScheduler::get_storage_status()
   return storage_valid_;
   
 }
+
+struct Data {
+    int seconds;
+    std::string state;
+};
+
+std::vector<Data> RTCScheduler::splitCsvData(const std::string& csvData) {
+    std::vector<Data> result;
+    std::string token;
+    std::size_t start = 0;
+    std::size_t end = 0;
+    while ((end = csvData.find(',', start)) != std::string::npos) {
+        token = csvData.substr(start, end - start);
+        Data data;
+        data.seconds = std::stoi(token.substr(0, 5));
+        data.state = token.substr(5);
+        result.push_back(data);
+        start = end + 1;
+    }
+    token = csvData.substr(start);
+    Data data;
+    data.seconds = std::stoi(token.substr(0, 5));
+    data.state = token.substr(5);
+    result.push_back(data);
+    return result;
+}
+
+/* int main() {
+    std::string csvData = "00000OFF,61140ON,61400OFF";
+    std::vector<Data> result = splitCsvData(csvData);
+    for (const auto& data : result) {
+        printf("Seconds: %d, State: %s\n", data.seconds, data.state.c_str());
+    }
+    return 0;
+} */
+
+std::vector<uint16_t> RTCScheduler::split_and_convert(std::string s) {
+    std::string delimiter =",";
+    size_t pos_start = 0, pos_end, delim_len = delimiter.length();
+    std::string token;
+    std::vector<uint16_t> res;
+
+    while ((pos_end = s.find(delimiter, pos_start)) != std::string::npos) {
+        token = s.substr (pos_start, pos_end - pos_start);
+        pos_start = pos_end + delim_len;
+        res.push_back (token);
+    }
+
+    res.push_back (s.substr (pos_start));
+    return res;
+}
+
 //******************************************************************************************
 
 RTCSchedulerControllerSwitch::RTCSchedulerControllerSwitch()
