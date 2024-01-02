@@ -11,8 +11,8 @@ namespace rtc_scheduler {
 
 static const char *TAG = "rtc_scheduler";
 // TODO Add timing code
-RTCScheduler::RTCScheduler() {}
-RTCScheduler::RTCScheduler(const std::string &name) : EntityBase(name) {}
+//RTCScheduler::RTCScheduler() {}
+//RTCScheduler::RTCScheduler(const std::string &name) : EntityBase(name) {}
 
 void RTCScheduler::setup() {
 
@@ -57,8 +57,8 @@ void RTCScheduler::configure_storage(){
       uint16_t data1;
       uint16_t data2;
       uint16_t storage_address;
-      this->storage_->get(this->storage_offset_, data1);
-      this->storage_->get(storage_offset_+2, data2);
+      this->storage_->read_object(this->storage_offset_, data1);
+      this->storage_->read_object(storage_offset_+2, data2);
       if (( data1 == SCHEDULER_VALID_WORD_1 ) and ( data2 == SCHEDULER_VALID_WORD_2 ))
         {
           storage_valid_ = true;
@@ -66,7 +66,7 @@ void RTCScheduler::configure_storage(){
           for (uint16_t i = 0; i < this->scheduled_items_.size(); i++)  // step through the items in the slot
             {
                // Check if slot is valid, if not move on
-                this->storage_->get(this->get_slot_starting_address(i),data1); 
+                this->storage_->read_object(this->get_slot_starting_address(i),data1); 
                 if (data1 == SLOT_VALID_WORD_1)
                 {
                      // Check if checksum is correct
@@ -97,8 +97,8 @@ void RTCScheduler::configure_storage(){
           // not configured so configure it now
           data1=SCHEDULER_VALID_WORD_1;
           data2=SCHEDULER_VALID_WORD_2;
-          this->storage_->put(this->storage_offset_,data1);
-          this->storage_->put(this->storage_offset_+2,data2);
+          this->storage_->write_object(this->storage_offset_,data1);
+          this->storage_->write_object(this->storage_offset_+2,data2);
           storage_valid_ = true;
           data1 = SLOT_INVALID_WORD_1;
           // by definition all slots in this scheduler are invalid
@@ -109,7 +109,7 @@ void RTCScheduler::configure_storage(){
             {
               for (uint16_t i = 0; i < this->scheduled_items_.size(); i++)  // step through the sw items
                { 
-                this->storage_->put(this->get_slot_starting_address(i),data1);
+                this->storage_->write_object(this->get_slot_starting_address(i),data1);
                 //  set item to invalid
                 this->set_slot_valid(i,false);
                } 
@@ -135,12 +135,12 @@ void RTCScheduler::configure_storage(){
     }
 }
 void RTCScheduler:: test(){
-                ESP_LOGD(TAG, "Mem size in bytes: %d",this->storage_->length());
-                int myValue2 = -366;
-                this->storage_->put(10, myValue2); //(location, data)
-                int myRead2;
-                this->storage_->get(10, myRead2); //location to read, thing to put data into
-                ESP_LOGD(TAG, "I read: %d",myRead2 );
+                ESP_LOGD(TAG, "Sched Mem size in bytes: %d",this->storage_->get_memory_size());
+//                int myValue2 = -366;
+//                this->storage_->write_object(10, myValue2); //(location, data)
+                uint32_t myRead2;
+                this->storage_->read_object(10, myRead2); //location to read, thing to put data into
+                ESP_LOGD(TAG, "I as sched read: %d",myRead2 );
 }
 
 
@@ -249,7 +249,7 @@ bool RTCScheduler::check_the_cksm(uint8_t slot)
 {
   uint16_t stored_checksum;
   // read what is stored
-  this->storage_->get(get_slot_starting_address(slot)+2,stored_checksum); 
+  this->storage_->read_object(get_slot_starting_address(slot)+2,stored_checksum); 
   if (this->calculate_slot_cksm(slot) == stored_checksum)
   {
     return true;
@@ -264,7 +264,7 @@ uint16_t RTCScheduler::calculate_slot_cksm(uint8_t slot)
   uint8_t data;
   while (len--) {
     // read the data from storage
-    this->storage_->get(data_addr, data);
+    this->storage_->read_object(data_addr, data);
     crc ^= data;
     data_addr++;
     for (uint8_t i = 0; i < 8; i++) {
@@ -305,7 +305,7 @@ struct Data {
     std::string state;
 };
 
-std::vector<Data> RTCScheduler::splitCsvData(const std::string& csvData) {
+/* std::vector<Data> RTCScheduler::splitCsvData(const std::string& csvData) {
     std::vector<Data> result;
     std::string token;
     std::size_t start = 0;
@@ -324,7 +324,7 @@ std::vector<Data> RTCScheduler::splitCsvData(const std::string& csvData) {
     data.state = token.substr(5);
     result.push_back(data);
     return result;
-}
+} */
 
 /* int main() {
     std::string csvData = "00000OFF,61140ON,61400OFF";
@@ -335,7 +335,7 @@ std::vector<Data> RTCScheduler::splitCsvData(const std::string& csvData) {
     return 0;
 } */
 
-std::vector<uint16_t> RTCScheduler::split_and_convert(std::string s) {
+/* std::vector<uint16_t> RTCScheduler::split_and_convert(std::string s) {
     std::string delimiter =",";
     size_t pos_start = 0, pos_end, delim_len = delimiter.length();
     std::string token;
@@ -349,7 +349,7 @@ std::vector<uint16_t> RTCScheduler::split_and_convert(std::string s) {
 
     res.push_back (s.substr (pos_start));
     return res;
-}
+} */
 
 //******************************************************************************************
 

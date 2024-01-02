@@ -12,10 +12,10 @@ namespace rtc_scheduler {
 class RTCScheduler;                       // the scheduler controller
 class RTCSchedulerHub;                    // this component
 
-class RTCSchedulerHub : public Component, public api::CustomAPIDevice,  public EntityBase {
+class RTCSchedulerHub : public Component, public api::CustomAPIDevice {
  public:
-   RTCSchedulerHub();
-   RTCSchedulerHub(const std::string &name);  
+//   RTCSchedulerHub();
+//   RTCSchedulerHub(const std::string &name);  
    void setup() override;
    void loop() override;
    void dump_config() override;
@@ -29,11 +29,15 @@ class RTCSchedulerHub : public Component, public api::CustomAPIDevice,  public E
    void send_event_to_ha(std::string event_str);
    void send_notification_to_ha(std::string title, std::string message,std::string id );
    void set_storage(ext_eeprom_component::ExtEepromComponent *storage) ;
+   void set_name(const std::string &name) { this->name_ = name; }
    void display_storage_status();
+  
+
  protected:
    RTCScheduler* get_scheduler(std::string &scheduler_id);
    std::vector<RTCScheduler *> schedule_controllers_;
    ext_eeprom_component::ExtEepromComponent *storage_;
+   std::string name_;
 };
 
 

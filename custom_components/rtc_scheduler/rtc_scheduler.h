@@ -85,6 +85,7 @@ class RTCSchedulerControllerSwitch : public switch_::Switch, public Component {
   void loop() override;
   float get_setup_priority() const override;
 
+
  protected:
   bool assumed_state() override;
   void write_state(bool state) override;
@@ -98,15 +99,15 @@ class RTCSchedulerControllerSwitch : public switch_::Switch, public Component {
 
 }; 
 
-class RTCScheduler : public Component, public api::CustomAPIDevice, public EntityBase {
+class RTCScheduler : public Component, public api::CustomAPIDevice  {
   public:
-    RTCScheduler();
-    RTCScheduler(const std::string &name);  
+    //RTCScheduler();
+    //RTCScheduler(const std::string &name);  
     void setup() override;
     void loop() override;
     void dump_config() override;
     void test();
-    
+    void set_name(const std::string &name) { this->name_ = name; }
     void on_schedule_recieved(int schedule_slot_id,  std::vector<int> days ,std::vector<int> hours ,std::vector<int> minutes, std::vector<std::string> &actions);
     void on_text_schedule_recieved(int schedule_slot_id, std::string &events); 
     void send_log_message_to_HA(String level, String logMessage, String sender);
@@ -137,7 +138,8 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
     void set_slot_valid(uint8_t item_slot_number, bool valid);
     void set_slot_sw_state(uint8_t item_slot_number, bool sw_state);
     bool get_storage_status();
-    std::vector<uint16_t> split_and_convert(std::string s);
+    //std::vector<uint16_t> split_and_convert(std::string s);
+    //std::vector<Data> splitCsvData(const std::string& csvData);
 
   protected:
     ext_eeprom_component::ExtEepromComponent *storage_;
@@ -151,6 +153,7 @@ class RTCScheduler : public Component, public api::CustomAPIDevice, public Entit
     uint16_t calculate_slot_cksm(uint8_t slot);
     uint16_t get_slot_starting_address(uint8_t slot);
     void configure_storage();
+    std::string name_;
     RTCSchedulerItemMode_Select* get_scheduled_item_from_slot(uint8_t slot);
     // Other Controller instances we should be aware of (used to check if slots are conflicting)
     std::vector<RTCScheduler *> other_controllers_;

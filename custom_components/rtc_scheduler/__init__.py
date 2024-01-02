@@ -22,21 +22,21 @@ DEPENDENCIES = ['api']
 CONF_EXT_EEPROM ='storage'
 CONF_EXT_EEPROM_OFFSET ='storage_offset'
 CONF_EXT_EEPROM_SIZE ='storage_size'
-CONF_MAIN_SWITCH = "main_switch"
+CONF_SCHEDULER_ENABLE = "scheduler_enable"
 CONF_CONTROLLER_STATUS_ID = "schedule_controller_status_id"
 CONF_MAX_EVENTS_PER_SW = "max_events_per_switch"
 CONF_SCHEDULER_SELECT = "scheduler_mode"
 CONF_SCHEDULER_IND = "scheduler_ind"
 CONF_SCHEDULERS = "schedulers"
-
+CONF_SCHEDULER_NAME = "scheduler_name"
 CONF_SWITCHES = "switches"
 CONF_SCHEDULED_SWITCH = "scheduled_switch"
 CONF_SCHEDULED_SWITCH_ID = "scheduled_switch_id"
-CONF_SCHEDULER_SLOT = "scheduler_slot"
-CONF_SCHEDULED_MODE = "scheduled_mode"
-CONF_SCHEDULED_IND = "scheduled_indicator"
-CONF_SCHEDULED_STATUS = "scheduled_status"
-CONF_SCHEDULED_NEXT_EVENT = "scheduled_next_event_text"
+CONF_SCHEDULED_SWITCH_SLOT = "scheduled_switch_slot"
+CONF_SCHEDULED_SWITCH_MODE = "scheduled_switch_mode"
+CONF_SCHEDULED_SWITCH_IND = "scheduled_switch_indicator"
+CONF_SCHEDULED_SWITCH_STATUS = "scheduled_switch_status"
+CONF_SCHEDULED_SWITCH_NEXT_EVENT = "scheduled_switch_next_event_text"
 
 SCHEDULED_ITEM_MODE_OPTIONS = [
     "Manual Off",
@@ -45,10 +45,15 @@ SCHEDULED_ITEM_MODE_OPTIONS = [
     "Manual On",
     "Boost On"
 ]
+
+
 _UNDEF = object()
-rtc_scheduler_hub_ns = cg.esphome_ns.namespace('rtc_scheduler')
-RTCSchedulerHub = rtc_scheduler_hub_ns.class_('RTCSchedulerHub', cg.Component)
 rtc_scheduler_ns = cg.esphome_ns.namespace('rtc_scheduler')
+
+# rtc_scheduler_hub_ns = cg.esphome_ns.namespace('rtc_scheduler')
+# RTCSchedulerHub = rtc_scheduler_hub_ns.class_('RTCSchedulerHub', cg.Component)
+RTCSchedulerHub = rtc_scheduler_ns.class_('RTCSchedulerHub', cg.Component)
+# rtc_scheduler_ns = cg.esphome_ns.namespace('rtc_scheduler')
 RTCScheduler = rtc_scheduler_ns.class_('RTCScheduler', cg.Component)
 
 SchedulerControllerSwitch = rtc_scheduler_ns.class_(
@@ -96,7 +101,7 @@ def validate_scheduler(config):
         scheduler_controller_index = 0
         for scheduler_controller in scheduler_hub[CONF_SCHEDULERS]:
             requirements = [
-                    CONF_MAIN_SWITCH,
+                    CONF_SCHEDULER_ENABLE,
                     CONF_EXT_EEPROM_OFFSET,
                     CONF_MAX_EVENTS_PER_SW,
                     
@@ -115,17 +120,17 @@ def validate_scheduler(config):
             slots = []    
             for item in scheduler_controller[CONF_SWITCHES]:
                 if slots is None:
-                    slots.append(item[CONF_SCHEDULER_SLOT])
+                    slots.append(item[CONF_SCHEDULED_SWITCH_SLOT])
                 else:
-                    if item[CONF_SCHEDULER_SLOT] not in slots:
-                        slots.append(item[CONF_SCHEDULER_SLOT]) 
+                    if item[CONF_SCHEDULED_SWITCH_SLOT] not in slots:
+                        slots.append(item[CONF_SCHEDULED_SWITCH_SLOT]) 
                     else:
                         raise cv.Invalid(
-                            f"Slot number {item[CONF_SCHEDULER_SLOT]} cannot be used more than once they must be unique"  
+                            f"Slot number {item[CONF_SCHEDULED_SWITCH_SLOT]} cannot be used more than once they must be unique"  
                         )
                 if ((not CONF_SCHEDULED_SWITCH_ID in item) and (not CONF_SCHEDULED_SWITCH in item)):
                     raise cv.Invalid(
-                        f"Slot number {item[CONF_SCHEDULER_SLOT]} must have either a scheduled_switch_id or scheduled_switch"
+                        f"Slot number {item[CONF_SCHEDULED_SWITCH_SLOT]} must have either a scheduled_switch_id or scheduled_switch"
                     )
             scheduler_controller_index = scheduler_controller_index +1
     return config
@@ -144,22 +149,22 @@ SCHEDULER_SWITCH_SCHEMA = cv.Schema(
         
         
 
-        cv.Required(CONF_SCHEDULER_SLOT): cv.uint8_t,
+        cv.Required(CONF_SCHEDULED_SWITCH_SLOT): cv.uint8_t,
         cv.Optional(CONF_SCHEDULED_SWITCH_ID): cv.use_id(switch.Switch),
         
-        cv.Optional(CONF_SCHEDULED_NEXT_EVENT): cv.maybe_simple_value(
+        cv.Optional(CONF_SCHEDULED_SWITCH_NEXT_EVENT): cv.maybe_simple_value(
             text_sensor.text_sensor_schema(SchedulerTextSensor),
             key=CONF_NAME,
         ),
-        cv.Optional(CONF_SCHEDULED_STATUS): cv.maybe_simple_value(
+        cv.Optional(CONF_SCHEDULED_SWITCH_STATUS): cv.maybe_simple_value(
             text_sensor.text_sensor_schema(SchedulerTextSensor),
             key=CONF_NAME,
         ),
-        cv.Optional(CONF_SCHEDULED_IND): cv.maybe_simple_value(
+        cv.Optional(CONF_SCHEDULED_SWITCH_IND): cv.maybe_simple_value(
             binary_sensor.binary_sensor_schema().extend(),
             key=CONF_NAME,
         ),
-        cv.Required(CONF_SCHEDULED_MODE): cv.maybe_simple_value(
+        cv.Required(CONF_SCHEDULED_SWITCH_MODE): cv.maybe_simple_value(
             select_schema(ScheduledItemSelect),
             key=CONF_NAME,
         ),
@@ -175,6 +180,7 @@ SCHEDULER_CONTROLLER_SCHEMA = cv.Schema(
     {
 
         cv.GenerateID(): cv.declare_id(RTCScheduler),
+        cv.Required(CONF_NAME): cv.string,
         cv.Required(CONF_EXT_EEPROM_OFFSET): cv.uint16_t,
         cv.Required(CONF_MAX_EVENTS_PER_SW): cv.uint16_t,
 
@@ -183,11 +189,8 @@ SCHEDULER_CONTROLLER_SCHEMA = cv.Schema(
             binary_sensor.binary_sensor_schema().extend(),
             key=CONF_NAME,
         ),
-        cv.Required(CONF_SCHEDULER_SELECT): cv.maybe_simple_value(
-            select_schema(ScheduledItemSelect),
-            key=CONF_NAME,
-        ),
-        cv.Required(CONF_MAIN_SWITCH): cv.maybe_simple_value(
+        
+        cv.Required(CONF_SCHEDULER_ENABLE): cv.maybe_simple_value(
             switch.switch_schema(SchedulerControllerSwitch),
             key=CONF_NAME,
         ),
@@ -198,15 +201,18 @@ SCHEDULER_CONTROLLER_SCHEMA = cv.Schema(
         ),
         cv.Required(CONF_SWITCHES): cv.ensure_list(SCHEDULER_SWITCH_SCHEMA),
     }
-).extend(cv.ENTITY_BASE_SCHEMA)
+# ).extend(cv.ENTITY_BASE_SCHEMA)
+).extend(cv.COMPONENT_SCHEMA)
 
 SCHEDULER_HUB_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(RTCSchedulerHub),
+        cv.Required(CONF_NAME): cv.string,
         cv.Required(CONF_EXT_EEPROM): cv.use_id(ext_eeprom_component.ExtEepromComponent),
         cv.Required(CONF_SCHEDULERS): cv.ensure_list(SCHEDULER_CONTROLLER_SCHEMA),
     }
-).extend(cv.ENTITY_BASE_SCHEMA)
+# ).extend(cv.ENTITY_BASE_SCHEMA)
+).extend(cv.COMPONENT_SCHEMA)
 CONFIG_SCHEMA = cv.All(
     cv.ensure_list(SCHEDULER_HUB_SCHEMA),
     validate_scheduler,
@@ -233,6 +239,7 @@ async def to_code(config):
             scheduler_hub[CONF_ID],
             #scheduler_controller[CONF_MAIN_SWITCH][CONF_NAME],
         )
+        cg.add(varh.set_name(scheduler_hub[CONF_NAME]))
         await cg.register_component(varh, scheduler_hub)
         store = await cg.get_variable(scheduler_hub[CONF_EXT_EEPROM])
         cg.add(varh.set_storage(store))
@@ -241,8 +248,11 @@ async def to_code(config):
         
             var = cg.new_Pvariable(
                 scheduler_controller[CONF_ID],
-                scheduler_controller[CONF_MAIN_SWITCH][CONF_NAME],
+#                scheduler_controller[CONF_MAIN_SWITCH][CONF_NAME],
                 )
+            cg.add(var.set_name(scheduler_controller[CONF_NAME]))
+#            cg.add(var.set_controller_main_switch(scheduler_controller[CONF_MAIN_SWITCH]))
+
             await cg.register_component(var, scheduler_controller)
 #            store = await cg.get_variable(scheduler_controller[CONF_EXT_EEPROM])
 #            cg.add(var.set_storage(store))
@@ -257,36 +267,36 @@ async def to_code(config):
             status_var = await text_sensor.new_text_sensor(scheduler_controller[CONF_CONTROLLER_STATUS_ID])
             await cg.register_component(status_var, scheduler_controller[CONF_CONTROLLER_STATUS_ID])
 
-            sw_var = await switch.new_switch(scheduler_controller[CONF_MAIN_SWITCH])
-            await cg.register_component(sw_var, scheduler_controller[CONF_MAIN_SWITCH])
-
+            sw_var = await switch.new_switch(scheduler_controller[CONF_SCHEDULER_ENABLE])
+            await cg.register_component(sw_var, scheduler_controller[CONF_SCHEDULER_ENABLE])
+            
             cg.add(var.set_main_switch_status(status_var))
             cg.add(var.set_controller_main_switch(sw_var))
         # Now create the scheduled items
             for sch_switch in scheduler_controller[CONF_SWITCHES]:
-                if CONF_SCHEDULED_STATUS in sch_switch:
-                    status_var = await text_sensor.new_text_sensor(sch_switch[CONF_SCHEDULED_STATUS])
-                    await cg.register_component(status_var, sch_switch[CONF_SCHEDULED_STATUS])
-                if CONF_SCHEDULED_NEXT_EVENT in sch_switch:
-                    next_var = await text_sensor.new_text_sensor(sch_switch[CONF_SCHEDULED_NEXT_EVENT])
-                    await cg.register_component(next_var, sch_switch[CONF_SCHEDULED_NEXT_EVENT])
+                if CONF_SCHEDULED_SWITCH_STATUS in sch_switch:
+                    status_var = await text_sensor.new_text_sensor(sch_switch[CONF_SCHEDULED_SWITCH_STATUS])
+                    await cg.register_component(status_var, sch_switch[CONF_SCHEDULED_SWITCH_STATUS])
+                if CONF_SCHEDULED_SWITCH_NEXT_EVENT in sch_switch:
+                    next_var = await text_sensor.new_text_sensor(sch_switch[CONF_SCHEDULED_SWITCH_NEXT_EVENT])
+                    await cg.register_component(next_var, sch_switch[CONF_SCHEDULED_SWITCH_NEXT_EVENT])
 
                 if CONF_SCHEDULED_SWITCH in sch_switch:
                     sw_var = await switch.new_switch(sch_switch[CONF_SCHEDULED_SWITCH])
                     await cg.register_component(sw_var, sch_switch[CONF_SCHEDULED_SWITCH])
                 
-                if CONF_SCHEDULED_IND in sch_switch:
-                    sens = await binary_sensor.new_binary_sensor(sch_switch[CONF_SCHEDULED_IND])
+                if CONF_SCHEDULED_SWITCH_IND in sch_switch:
+                    sens = await binary_sensor.new_binary_sensor(sch_switch[CONF_SCHEDULED_SWITCH_IND])
 
                 if CONF_SCHEDULED_SWITCH_ID in sch_switch:
                     switch_id_var = await cg.get_variable(sch_switch[CONF_SCHEDULED_SWITCH_ID])
                 
 
-                selconf = sch_switch[CONF_SCHEDULED_MODE]
+                selconf = sch_switch[CONF_SCHEDULED_SWITCH_MODE]
                 mode_select=await select.new_select(selconf, options=SCHEDULED_ITEM_MODE_OPTIONS)
                 await cg.register_component(mode_select, selconf)
 
-                cg.add(var.add_scheduled_item(sch_switch[CONF_SCHEDULER_SLOT], sw_var, switch_id_var,  status_var, next_var, mode_select, sens ))
+                cg.add(var.add_scheduled_item(sch_switch[CONF_SCHEDULED_SWITCH_SLOT], sw_var, switch_id_var,  status_var, next_var, mode_select, sens ))
         # Add the the schedulers to the hub
         varh =  await cg.get_variable(scheduler_hub[CONF_ID])
         for scheduler_controller in scheduler_hub[CONF_SCHEDULERS]:

@@ -5,12 +5,12 @@
 namespace esphome {
 namespace rtc_scheduler {
   static const char *TAG = "rtc_scheduler_hub";
-RTCSchedulerHub::RTCSchedulerHub()
+/* RTCSchedulerHub::RTCSchedulerHub()
 {
 }
 RTCSchedulerHub::RTCSchedulerHub(const std::string &name) : EntityBase(name)
 {
-}
+} */
 void RTCSchedulerHub::setup()
 {
   std::string service_name;
@@ -104,27 +104,28 @@ void RTCSchedulerHub::set_storage(ext_eeprom_component::ExtEepromComponent *stor
 }
 RTCScheduler *RTCSchedulerHub::get_scheduler(std::string &scheduler_id)
 {
-        for (auto &controller : this->schedule_controllers_)
+//        for (auto &controller : this->schedule_controllers_)
+ /*      for (auto &controller : this->schedule_controllers_)
         { // lets find the right scheduler
 
           if (controller->get_object_id() == scheduler_id)
           {
             return controller;
           }
-        }
+        } */
         return nullptr;
 }
 void RTCSchedulerHub::display_storage_status()
 {
   std::string scheduler_id;
   bool status;
-  for (auto &controller : this->schedule_controllers_)
+  /* for (auto &controller : this->schedule_controllers_)
         { 
           
          scheduler_id = controller->get_object_id();
          status = controller->get_storage_status();
          ESP_LOGD(TAG, "Storage for %s is %d",scheduler_id.c_str(),status);
-        }
+        } */
 }
 } // namespace rtc_scheduler
 }  // namespace esphome
