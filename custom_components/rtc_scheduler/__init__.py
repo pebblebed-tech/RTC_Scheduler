@@ -3,7 +3,7 @@ import esphome.config_validation as cv
 from esphome import automation
 from esphome.const import CONF_ID
 from esphome.automation import maybe_simple_id
-from esphome.components import ext_eeprom_component
+from esphome.components import external_eeprom
 from esphome.components import switch
 from esphome.components import text_sensor
 from esphome.components import select
@@ -208,7 +208,7 @@ SCHEDULER_HUB_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(RTCSchedulerHub),
         cv.Required(CONF_NAME): cv.string,
-        cv.Required(CONF_EXT_EEPROM): cv.use_id(ext_eeprom_component.ExtEepromComponent),
+        cv.Required(CONF_EXT_EEPROM): cv.use_id(external_eeprom.ExtEepromComponent),
         cv.Required(CONF_SCHEDULERS): cv.ensure_list(SCHEDULER_CONTROLLER_SCHEMA),
     }
 # ).extend(cv.ENTITY_BASE_SCHEMA)

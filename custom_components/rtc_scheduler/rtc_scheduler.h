@@ -3,7 +3,7 @@
 #include "esphome/core/component.h"
 #include "esphome/core/preferences.h"
 #include "esphome/components/api/custom_api_device.h"
-#include "../ext_eeprom_component/ext_eeprom_component.h"
+#include "../external_eeprom/external_eeprom.h"
 #include "esphome/core/hal.h"
 #include "esphome/components/switch/switch.h"
 #include "esphome/components/text_sensor/text_sensor.h"
@@ -114,7 +114,7 @@ class RTCScheduler : public Component, public api::CustomAPIDevice  {
     void on_schedule_erase_recieved(int schedule_slot_id);
     void on_erase_all_schedules_recieved();
     void set_storage_offset(uint16_t storage_offset) { this->storage_offset_ = storage_offset; }
-    void set_storage(ext_eeprom_component::ExtEepromComponent *storage) { this->storage_ = storage; }
+    void set_storage(external_eeprom::ExtEepromComponent *storage) { this->storage_ = storage; }
     void set_scheduled_items_count_(uint8_t items_count) { this->scheduled_items_count_ = items_count; }
     void set_events_per_switch(uint16_t max_switch_events) { this->max_switch_events_ = max_switch_events; }
     float get_setup_priority() const override;
@@ -142,7 +142,7 @@ class RTCScheduler : public Component, public api::CustomAPIDevice  {
     //std::vector<Data> splitCsvData(const std::string& csvData);
 
   protected:
-    ext_eeprom_component::ExtEepromComponent *storage_;
+    external_eeprom::ExtEepromComponent *storage_;
     uint16_t storage_offset_;
     bool storage_configured = false;
     uint8_t scheduled_items_count_ = 0;      // Number active scheduled items

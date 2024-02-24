@@ -98,7 +98,7 @@ void RTCSchedulerHub::send_log_message_to_ha(std::string level, std::string logM
 //        fire_homeassistant_event("esphome.something_happened", {
 //      {"my_value", "500"},});
 }
-void RTCSchedulerHub::set_storage(ext_eeprom_component::ExtEepromComponent *storage)
+void RTCSchedulerHub::set_storage(external_eeprom::ExtEepromComponent *storage)
 {
   this->storage_ = storage;
 }

@@ -1,40 +1,22 @@
 esphome:
-  name: "schedule-test"
+  name: esphome-web-204d55
+  friendly_name: ESPHome Web 204d55
+  platform: ESP8266
+  board: d1_mini
 
-esp32:
-  board: esp32dev
-  framework:
-    type: arduino
-#    type: esp-idf
-#    version: recommended
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
 api:
   password: !secret api_password
+
 ota:
   password: !secret ota_password
-debug:
-  update_interval: 5s
 
-text_sensor:
-  - platform: debug
-    device:
-      name: "Device Info"
-    reset_reason:
-      name: "Reset Reason"
 
-logger:
-    
-    # Enable fallback hotspot (captive portal) in case wifi connection fails
-    level: DEBUG
-    logs: 
-        api: DEBUG
-        homeassistant: DEBUG
-        nextion: DEBUG
-        api.service: DEBUG
-        sensor: DEBUG
-        scheduler: DEBUG
-        dallas: DEBUG
-        i2c: DEBUG
-        ext_eeprom: DEBUG
+
 
 wifi:
   ssid: !secret wifi_ssid
@@ -42,58 +24,37 @@ wifi:
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
-    ssid: "Esphome-Web-C34484"
-    password: "hlVBVePNuBE3"
+    ssid: "Esphome-Web-204D55"
+    password: "muBRYKrUf3qv"
 
 captive_portal:
-uart:
-  rx_pin: GPIO16 
-  tx_pin: GPIO17 
-  baud_rate: 115200
+
+i2c:
+  sda: D2
+  scl: D1
+  scan: true   
 
 time:
   - platform: homeassistant
     id: homeassistant_time
-
-i2c:
-  sda: GPIO21
-  scl: GPIO22
-  scan: true    
-  id: bus_1
-external_components:
-  - source: github://pebblebed-tech/esphome@add-serial-EEPROM-feature
-    components: [ external_eeprom ] 
 
 external_eeprom:
   id: ext_eeprom_component_1
   address: 0x57
   ee_memory_type: 24XX32
   i2c_buffer_size: 128
-  i2c_id: bus_1
 
-globals:
-  - id: my_global_int
-    type: int
-    restore_value: yes
-    initial_value: '0'
-  - id: my_global_string
-    type: int[5]
-    restore_value: yes
-    initial_value: '{0,1,2,3,4}'
 
 switch:
   - platform: template    
     name: "Test EEPROM Switch"
     id: "test_ee_switch"
     turn_on_action:
-        - globals.set:
-            id: my_global_int
-            value: '10'
         - lambda: |-
               uint8_t myValue1 = 42;
-              ext_eeprom_component_1->write8(15, myValue1);
+              ext_eeprom_component_1->write8(35, myValue1);
               uint8_t myRdValue1;
-              myRdValue1 = ext_eeprom_component_1->read8(15);
+              myRdValue1 = ext_eeprom_component_1->read8(35);
               ESP_LOGD("Eeprom", "I read: %d",myRdValue1 );
               int32_t myValue2 = -480;
               ext_eeprom_component_1->write_object(10, myValue2); //(location, data)
@@ -119,4 +80,6 @@ switch:
               ext_eeprom_component_1->write8(6, 6);
               ext_eeprom_component_1->write8(7, 7);
               ext_eeprom_component_1->dump_eeprom(0,8);
+              
+
              

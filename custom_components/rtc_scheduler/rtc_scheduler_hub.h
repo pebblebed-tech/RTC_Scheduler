@@ -5,7 +5,7 @@
 #include "esphome/components/api/custom_api_device.h"
 #include "esphome/core/hal.h"
 #include "rtc_scheduler.h"
-#include "../ext_eeprom_component/ext_eeprom_component.h"
+#include "../external_eeprom/external_eeprom.h"
 
 namespace esphome {
 namespace rtc_scheduler {
@@ -28,7 +28,7 @@ class RTCSchedulerHub : public Component, public api::CustomAPIDevice {
    void send_log_message_to_ha(std::string level, std::string logMessage, std::string sender);
    void send_event_to_ha(std::string event_str);
    void send_notification_to_ha(std::string title, std::string message,std::string id );
-   void set_storage(ext_eeprom_component::ExtEepromComponent *storage) ;
+   void set_storage(external_eeprom::ExtEepromComponent *storage) ;
    void set_name(const std::string &name) { this->name_ = name; }
    void display_storage_status();
   
@@ -36,7 +36,7 @@ class RTCSchedulerHub : public Component, public api::CustomAPIDevice {
  protected:
    RTCScheduler* get_scheduler(std::string &scheduler_id);
    std::vector<RTCScheduler *> schedule_controllers_;
-   ext_eeprom_component::ExtEepromComponent *storage_;
+   external_eeprom::ExtEepromComponent *storage_;
    std::string name_;
 };
 
