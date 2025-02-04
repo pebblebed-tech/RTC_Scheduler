@@ -11,19 +11,29 @@ esphome:
   project:
     name: heating.zone-controller
     version: 1.0.0
+  on_boot:
+    then:
+      # read the RTC time once when the system boots
+      ds1307.read_time:
+
 esp32:
   board: esp32-s3-devkitc-1
   flash_size: 8MB
   framework:
     type: arduino
-    
+external_components:
+- source:
+      type: local
+      path: my_components
 
 # Enable logging
 logger:
-  level: DEBUG
+  level: VERBOSE
 # Enable Home Assistant API
 api:
-    password: !secret api_password
+   # password: !secret api_password
+  encryption: 
+    key: !secret api_key
 
 ota:
   - platform: esphome
@@ -39,20 +49,51 @@ wifi:
     static_ip: 192.168.1.150
     gateway: 192.168.1.254
     subnet: 255.255.255.0
+    dns1: 192.168.1.254
   # Enable fallback hotspot (captive portal) in case wifi connection fails
-
+  ap:
+    ssid: !secret ap_ssid
+    password: !secret ap_password
+http_request:
+  id: http_request_data
+  useragent: esphome/sched
+  timeout: 10s
+  verify_ssl: false
+globals:
+  - id: ipInfodata
+    type: std::string
+    restore_value: no
+    initial_value: '""'
 
 captive_portal:
 
 web_server:
   port: 80
+  
+i2c:
+  sda: GPIO4
+  scl: GPIO5
+  scan: true    
+  id: bus_1
+time:
+  - platform: ds1307
+    id: rtc_time
+    # repeated synchronization is not necessary unless the external RTC
+    # is much more accurate than the internal clock
+    update_interval: never
+  - platform: homeassistant
+    # instead try to synchronize via network repeatedly ...
+    on_time_sync:
+      then:
+        # ... and update the RTC when the synchronization was successful
+        ds1307.write_time:
 
 # dashboard_import:
 #  package_import_url: github://ryansch/esphome-config/waveshare-esp32-s3-relay-6ch.yaml
 
-time:
-  - platform: homeassistant
-    id: homeassistant_time
+#time:
+#  - platform: homeassistant
+#    id: homeassistant_time
 
 binary_sensor:
   - platform: status
@@ -90,6 +131,66 @@ switch:
     pin: GPIO1
     id: relay1
     name: Relay 1
+    on_turn_on:
+      - http_request.post:
+          url: http://rhome:8123/api/services/schedule/get_schedule?return_response
+          headers:
+            Content-Type: application/json
+            Authorization: !secret ha_token
+          max_response_buffer_size: 2048
+          capture_response: true
+          json:
+            entity_id: "schedule.lighting"
+          on_response:
+            then:
+              - if:
+                  condition:
+                    lambda: return response->status_code == 200;
+                  then:
+                    - lambda: |-
+                        ESP_LOGD("http","Got OK 200");
+                        ESP_LOGD("RESPONSE", "response_data size [%d]", body.length());
+                        if(!body.empty()) {
+                          ESP_LOGD("JSON","About to parse");
+                          //ESP_LOGD("JSON","last part of body [%d]}", body.substr(body.size() - 100).c_str());
+                          DynamicJsonDocument doc(2048);
+                          deserializeJson(doc, body);
+                          JsonObject service_response_schedule_lighting = doc["service_response"]["schedule.lighting"];
+
+                          //for (JsonObject service_response_schedule_lighting_day : service_response["schedule.lighting"].as<JsonArray>()) {
+                          //   ESP_LOGD("PARSE", "day: [%s]", day.c_str()); 
+                           for (JsonPair kv : service_response_schedule_lighting) {
+                                std::string day = kv.key().c_str(); 
+                                ESP_LOGD("PARSE", "day: [%s]", day.c_str()); 
+
+                                for (JsonObject service_response_schedule_lighting_item : service_response_schedule_lighting[day].as<JsonArray>()) {
+
+                                    std::string service_response_schedule_lighting_item_start = service_response_schedule_lighting_item["start"];
+                                    std::string service_response_schedule_lighting_item_end = service_response_schedule_lighting_item["end"];
+
+                                    std::string service_response_schedule_lighting_item_brightness = service_response_schedule_lighting_item["data"]["brightness"];
+                                    std::string service_response_schedule_lighting_item_rgb = service_response_schedule_lighting_item["data"]["rgb"];
+                                    ESP_LOGD("PARSE", "start: [%s] Stop: [%s] Bright: [%s] RGB: [%s]",service_response_schedule_lighting_item_start.c_str() , service_response_schedule_lighting_item_end.c_str(), service_response_schedule_lighting_item_brightness.c_str(), service_response_schedule_lighting_item_rgb.c_str()); 
+                                  }
+                              }
+                            ESP_LOGD("PARSE", "day: outer for loop"); 
+                                
+                           // }
+                           // JsonPair day = service_response_schedule_lighting_day
+                            // ESP_LOGD("PARSE", "day: [%s]", day.key().c_str());
+                            //for (JsonObject service_response_schedule_lighting_day_time : service_response_schedule_lighting_day.as<JsonArray>()){
+                             // ESP_LOGD("PARSE", "start: [%s]", service_response_schedule_lighting_day_time["start"].as<String>());
+                            //  ESP_LOGD("PARSE", "end: [%s]", service_response_schedule_lighting_day_time["end"].as<String>());
+                           // }
+                           ESP_LOGD("JSON","Finish parse");
+                          }
+                        
+                      
+                  else:
+                    - logger.log:
+                        format: "Error: Response status: %d, message %s"
+                        args: [ 'response->status_code', 'body.c_str()' ]
+       
   - platform: gpio
     pin: GPIO2
     id: relay2
@@ -122,26 +223,26 @@ uart:
   id: modbus_uart
 
 
-modbus:
-  id: modbus1
-  uart_id: modbus_uart
-  send_wait_time: 1500ms
-  role: client
+# modbus:
+#  id: modbus1
+ # uart_id: modbus_uart
+#  send_wait_time: 1500ms
+#  role: client
 
-modbus_controller:
-  - id: mod_sensor_1
-    address: 0x02
-    command_throttle: 1000ms
-    update_interval: 60s
-    setup_priority: -10
-    offline_skip_updates: 8
+#modbus_controller:
+#  - id: mod_sensor_1
+#    address: 0x02
+#    command_throttle: 1000ms
+#    update_interval: 60s
+#    setup_priority: -10
+#    offline_skip_updates: 8
 
-  - id: mod_sensor_2
-    address: 0x03
-    command_throttle: 1000ms
-    update_interval: 60s
-    setup_priority: -10
-    offline_skip_updates: 8
+#  - id: mod_sensor_2
+#    address: 0x03
+ #   command_throttle: 1000ms
+#    update_interval: 60s
+#    setup_priority: -10
+#    offline_skip_updates: 8
     
 
 # buzzer
@@ -182,55 +283,55 @@ button:
     entity_category: config
 
 sensor:
-  - platform: modbus_controller
-    modbus_controller_id: mod_sensor_1
-    name: "Zone 1 Temp"
-    register_type: read
-    address: 0x0001    ## address of the register inside the Modbus slave device
-    unit_of_measurement: "°C"
-    device_class: "temperature"
-    value_type: S_WORD
-    accuracy_decimals: 0
-    filters:
-     - lambda: return x / 10;
+ # - platform: modbus_controller
+#    modbus_controller_id: mod_sensor_1
+#    name: "Zone 1 Temp"
+#   register_type: read
+#    address: 0x0001    ## address of the register inside the Modbus slave device
+#    unit_of_measurement: "°C"
+ #   device_class: "temperature"
+#    value_type: S_WORD
+ #   accuracy_decimals: 0
+#    filters:
+#     - lambda: return x / 10;
 
 
-  - platform: modbus_controller
-    modbus_controller_id: mod_sensor_1
-    name: "Zone 1 Hum"
-    register_type: read
-    address: 0x0002    ## address of the register inside the Modbus slave device
-    unit_of_measurement: "%"
-    device_class: "humidity"
-    value_type: U_WORD
-    accuracy_decimals: 2
-    filters:
-      - lambda: return x / 10;
+#  - platform: modbus_controller
+#    modbus_controller_id: mod_sensor_1
+#    name: "Zone 1 Hum"
+#    register_type: read
+#    address: 0x0002    ## address of the register inside the Modbus slave device
+#    unit_of_measurement: "%"
+#    device_class: "humidity"
+#    value_type: U_WORD
+#    accuracy_decimals: 2
+#    filters:
+#      - lambda: return x / 10;
 
-  - platform: modbus_controller
-    modbus_controller_id: mod_sensor_2
-    name: "Zone 2 Temp"
-    register_type: read
-    address: 0x0001    ## address of the register inside the Modbus slave device
-    unit_of_measurement: "°C"
-    device_class: "temperature"
-    value_type: S_WORD
-    accuracy_decimals: 0
-    filters:
-     - lambda: return x / 10;
+#  - platform: modbus_controller
+#    modbus_controller_id: mod_sensor_2
+#   name: "Zone 2 Temp"
+#    register_type: read
+#    address: 0x0001    ## address of the register inside the Modbus slave device
+#    unit_of_measurement: "°C"
+#    device_class: "temperature"
+#    value_type: S_WORD
+#    accuracy_decimals: 0
+#    filters:
+ #    - lambda: return x / 10;
 
 
-  - platform: modbus_controller
-    modbus_controller_id: mod_sensor_2
-    name: "Zone 2 Hum"
-    register_type: read
-    address: 0x0002    ## address of the register inside the Modbus slave device
-    unit_of_measurement: "%"
-    device_class: "humidity"
-    value_type: U_WORD
-    accuracy_decimals: 2
-    filters:
-      - lambda: return x / 10;
+ # - platform: modbus_controller
+ #   modbus_controller_id: mod_sensor_2
+ #   name: "Zone 2 Hum"
+ #   register_type: read
+ #   address: 0x0002    ## address of the register inside the Modbus slave device
+ #   unit_of_measurement: "%"
+ #   device_class: "humidity"
+  #  value_type: U_WORD
+ #   accuracy_decimals: 2
+ #   filters:
+  #    - lambda: return x / 10;
 
   - platform: wifi_signal
     name: "WiFi Signal"
@@ -246,3 +347,9 @@ sensor:
       - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
     unit_of_measurement: "%"
     entity_category: diagnostic
+#dynamic_cron:
+#    - name: Irrigation
+ #     lambda: |-
+#        ESP_LOGD("lambda", "Trigered CRON");
+#        return {true};   
+

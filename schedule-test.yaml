@@ -8,7 +8,9 @@ esp32:
 #    type: esp-idf
 #    version: recommended
 api:
-  password: !secret api_password
+#  password: !secret api_password
+  encryption: 
+    key: !secret api_key
 ota:
   platform: esphome
   password: !secret ota_password
@@ -43,8 +45,8 @@ wifi:
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
-    ssid: "Esphome-Web-C34484"
-    password: "hlVBVePNuBE3"
+    ssid: !secret ap_ssid
+    password: !secret ap_password
 
 captive_portal:
 uart:
@@ -61,6 +63,7 @@ i2c:
   scl: GPIO22
   scan: true    
   id: bus_1
+
 external_components:
   - source: github://pebblebed-tech/esphome@add-serial-EEPROM-feature
     components: [ external_eeprom ] 
@@ -120,4 +123,6 @@ switch:
               ext_eeprom_component_1->write8(6, 6);
               ext_eeprom_component_1->write8(7, 7);
               ext_eeprom_component_1->dump_eeprom(0,8);
+  - platform: factory_reset
+    name: Restart with Factory Default Settings
              
