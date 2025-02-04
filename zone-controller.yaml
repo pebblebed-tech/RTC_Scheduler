@@ -1,0 +1,248 @@
+substitutions:
+  name: zone-controller
+  friendly_name: Heating Zone Controller
+  area: ""
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  area: ${area}
+  name_add_mac_suffix: true
+  project:
+    name: heating.zone-controller
+    version: 1.0.0
+esp32:
+  board: esp32-s3-devkitc-1
+  flash_size: 8MB
+  framework:
+    type: arduino
+    
+
+# Enable logging
+logger:
+  level: DEBUG
+# Enable Home Assistant API
+api:
+    password: !secret api_password
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+    id: zone_controller_ota
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: true
+  # Static IP
+  manual_ip:
+    static_ip: 192.168.1.150
+    gateway: 192.168.1.254
+    subnet: 255.255.255.0
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+
+
+captive_portal:
+
+web_server:
+  port: 80
+
+# dashboard_import:
+#  package_import_url: github://ryansch/esphome-config/waveshare-esp32-s3-relay-6ch.yaml
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+binary_sensor:
+  - platform: status
+    name: "Status"
+
+  - platform: gpio
+    name: "Boot Button"
+    pin:
+      number: 0
+      ignore_strapping_warning: true
+      mode:
+        input: true
+      inverted: true
+    disabled_by_default: true
+    on_press:
+      then:
+        - button.press: restart_button
+
+text_sensor:
+  - platform: version
+    name: "Firmware Version"
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+      entity_category: diagnostic
+    ssid:
+      name: "Connected SSID"
+      entity_category: diagnostic
+    mac_address:
+      name: "Mac Address"
+      entity_category: diagnostic
+
+switch:
+  - platform: gpio
+    pin: GPIO1
+    id: relay1
+    name: Relay 1
+  - platform: gpio
+    pin: GPIO2
+    id: relay2
+    name: Relay 2
+  - platform: gpio
+    pin: GPIO41
+    id: relay3
+    name: Relay 3
+  - platform: gpio
+    pin: GPIO42
+    id: relay4
+    name: Relay 4
+  - platform: gpio
+    pin:
+      number: GPIO45
+      ignore_strapping_warning: true
+    id: relay5
+    name: Relay 5
+  - platform: gpio
+    pin:
+      number: GPIO46
+      ignore_strapping_warning: true
+    id: relay6
+    name: Relay 6
+
+uart:
+  tx_pin: GPIO17
+  rx_pin: GPIO18
+  baud_rate: 9600
+  id: modbus_uart
+
+
+modbus:
+  id: modbus1
+  uart_id: modbus_uart
+  send_wait_time: 1500ms
+  role: client
+
+modbus_controller:
+  - id: mod_sensor_1
+    address: 0x02
+    command_throttle: 1000ms
+    update_interval: 60s
+    setup_priority: -10
+    offline_skip_updates: 8
+
+  - id: mod_sensor_2
+    address: 0x03
+    command_throttle: 1000ms
+    update_interval: 60s
+    setup_priority: -10
+    offline_skip_updates: 8
+    
+
+# buzzer
+output:
+  - platform: ledc
+    pin: GPIO21
+    id: buzzer
+
+
+rtttl:
+  output: buzzer
+  id: rtttl_buzzer
+  gain: 30%
+
+light:
+  - platform: neopixelbus
+    type: RGB
+    variant: 800KBPS
+    pin: GPIO38
+    num_leds: 1
+    name: "RGB LED"
+    id: rgb_led
+
+button:
+  - platform: restart
+    name: "Restart"
+    id: restart_button
+    entity_category: config
+
+  - platform: factory_reset
+    name: "Factory Reset"
+    id: reset
+    entity_category: config
+
+  - platform: safe_mode
+    name: "Safe Mode"
+    internal: false
+    entity_category: config
+
+sensor:
+  - platform: modbus_controller
+    modbus_controller_id: mod_sensor_1
+    name: "Zone 1 Temp"
+    register_type: read
+    address: 0x0001    ## address of the register inside the Modbus slave device
+    unit_of_measurement: "°C"
+    device_class: "temperature"
+    value_type: S_WORD
+    accuracy_decimals: 0
+    filters:
+     - lambda: return x / 10;
+
+
+  - platform: modbus_controller
+    modbus_controller_id: mod_sensor_1
+    name: "Zone 1 Hum"
+    register_type: read
+    address: 0x0002    ## address of the register inside the Modbus slave device
+    unit_of_measurement: "%"
+    device_class: "humidity"
+    value_type: U_WORD
+    accuracy_decimals: 2
+    filters:
+      - lambda: return x / 10;
+
+  - platform: modbus_controller
+    modbus_controller_id: mod_sensor_2
+    name: "Zone 2 Temp"
+    register_type: read
+    address: 0x0001    ## address of the register inside the Modbus slave device
+    unit_of_measurement: "°C"
+    device_class: "temperature"
+    value_type: S_WORD
+    accuracy_decimals: 0
+    filters:
+     - lambda: return x / 10;
+
+
+  - platform: modbus_controller
+    modbus_controller_id: mod_sensor_2
+    name: "Zone 2 Hum"
+    register_type: read
+    address: 0x0002    ## address of the register inside the Modbus slave device
+    unit_of_measurement: "%"
+    device_class: "humidity"
+    value_type: U_WORD
+    accuracy_decimals: 2
+    filters:
+      - lambda: return x / 10;
+
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    id: wifi_signal_db
+    update_interval: 60s
+    entity_category: diagnostic
+
+  # Reports the WiFi signal strength in %
+  - platform: copy
+    source_id: wifi_signal_db
+    name: "WiFi Strength"
+    filters:
+      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
+    unit_of_measurement: "%"
+    entity_category: diagnostic

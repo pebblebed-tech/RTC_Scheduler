@@ -10,6 +10,7 @@ esp32:
 api:
   password: !secret api_password
 ota:
+  platform: esphome
   password: !secret ota_password
 debug:
   update_interval: 5s
